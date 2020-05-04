@@ -19,6 +19,7 @@ import android.widget.Toast;
 
 import com.yandex.mapkit.Animation;
 import com.yandex.mapkit.MapKitFactory;
+import com.yandex.mapkit.geometry.BoundingBox;
 import com.yandex.mapkit.geometry.Point;
 import com.yandex.mapkit.map.CameraPosition;
 import com.yandex.mapkit.map.PlacemarkMapObject;
@@ -48,6 +49,11 @@ public class CurrentOrderActivity extends AppCompatActivity {
     private ProgressBar progressBar;
     private TextView infoTextView;
 
+    private BoundingBox boundingBox;
+    private CameraPosition cameraPosition;
+    private PlacemarkMapObject markMe, markDriver;
+    private Point pointMe, pointDriver;
+
     @SuppressLint("CommitPrefEdits")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -65,15 +71,14 @@ public class CurrentOrderActivity extends AppCompatActivity {
         infoTextView = findViewById(R.id.infoTextView);
         ImageButton cancelButton = findViewById(R.id.cancelButton);
 
-        //Point point = new Point(Double.parseDouble(sharedPreferences.getString("source_address_lat", "")), Double.parseDouble(sharedPreferences.getString("source_address_lon", "")));
-        Point point = new Point(55.75370903771494, 37.61981338262558);
-        mapView = (MapView)findViewById(R.id.mapview);
-        mapView.getMap().move(
-                new CameraPosition(point, 18.0f, 0.0f, 0.0f),
-                new Animation(Animation.Type.SMOOTH, 1),
-                null);
+        //pointMe = new Point(Double.parseDouble(sharedPreferences.getString("source_address_lat", "")), Double.parseDouble(sharedPreferences.getString("source_address_lon", "")));
+        pointMe = new Point(55.768351, 49.153199);
 
-        PlacemarkMapObject mark = mapView.getMap().getMapObjects().addPlacemark(point, ImageProvider.fromResource(this, R.drawable.gps_marker));
+        mapView = findViewById(R.id.mapview);
+        mapView.getMap().move(new CameraPosition(pointMe, 14.0f, 0.0f, 0.0f),new Animation(Animation.Type.SMOOTH, 1),null);
+        markMe = mapView.getMap().getMapObjects().addPlacemark(pointMe, ImageProvider.fromResource(this, R.drawable.marker));
+        markDriver = mapView.getMap().getMapObjects().addPlacemark(new Point(0, 0), ImageProvider.fromResource(this, R.drawable.driver));
+        mapView.getMap().getMapObjects().remove(markDriver);
 
         SettingsServer settingsServer = new SettingsServer();
         server = settingsServer.getServer();
@@ -106,27 +111,44 @@ public class CurrentOrderActivity extends AppCompatActivity {
             public void onSuccess(String req, String jsonArray) throws JSONException {
                 if (req.equals("OK")) {
                     JSONObject mainObject = new JSONObject(jsonArray);
-                    if(mainObject.getString("state_kind").equals("new_order")
-                            || (mainObject.getString("state_kind").equals("driver_assigned") & mainObject.getString("confirmed").equals("not_confirmed"))){
-                        progressBar.setVisibility(View.VISIBLE);
-                        infoTextView.setText("Идет поиск автомобиля...");
-                    } else if (mainObject.getString("state_kind").equals("driver_assigned") & !mainObject.getString("confirmed").equals("not_confirmed")){
-                        progressBar.setVisibility(View.GONE);
-                        infoTextView.setText("К вам подъедет: \n" + "Автомобиль: " + mainObject.getString("car_mark")  + " " + mainObject.getString("car_model") + "\n" +
-                                "Цвет: " + mainObject.getString("car_color") + "\n" + "Гос номер: " + mainObject.getString("car_number"));
-                    } else if (mainObject.getString("state_kind").equals("car_at_place") || mainObject.getString("state_kind").equals("client_inside")){
-                        progressBar.setVisibility(View.GONE);
-                        infoTextView.setText("Вас ожидает: \n" + "Автомобиль: " + mainObject.getString("car_mark")  + " " + mainObject.getString("car_model") + "\n" +
-                                "Цвет: " + mainObject.getString("car_color") + "\n" + "Гос номер: " + mainObject.getString("car_number"));
+                    Log.d("HELLO", mainObject.toString());
                         //ТУТ НАДО ПРЕДУМАТЬ КАК УВЕДОМЛЯТЬ О УСПЕШНОМ ИЛИ ОТМЕНЕНОМ ЗАКАЗЕ
-                    } else if (mainObject.getString("state_kind").equals("finished")){
+                    if (mainObject.getString("state_kind").equals("finished")){
                         editor.remove("ORDER_ID");
                         editor.apply();
                         finish();
+                        //ТУТ НАДО ПРЕДУМАТЬ КАК УВЕДОМЛЯТЬ О УСПЕШНОМ ИЛИ ОТМЕНЕНОМ ЗАКАЗЕ
                     } else if (mainObject.getString("state_kind").equals("aborted")){
                         editor.remove("ORDER_ID");
                         editor.apply();
                         finish();
+                    } else if (mainObject.getString("state_kind").equals("new_order")
+                            || (mainObject.getString("state_kind").equals("driver_assigned") & mainObject.getString("confirmed").equals("not_confirmed"))){
+                        progressBar.setVisibility(View.VISIBLE);
+                        infoTextView.setText("Идет поиск автомобиля...");
+                        mapView.getMap().move(new CameraPosition(pointMe, 14.0f, 0.0f, 0.0f),new Animation(Animation.Type.SMOOTH, 1),null);
+                        ///////////это надо переделать/////////
+                        try {
+                            mapView.getMap().getMapObjects().remove(markDriver);
+                        } catch (Exception ignored){
+
+                        }
+                    } else if (mainObject.getString("state_kind").equals("driver_assigned") & !mainObject.getString("confirmed").equals("not_confirmed")){
+                        progressBar.setVisibility(View.GONE);
+                        infoTextView.setText("К вам подъедет: \n" + "Автомобиль: " + mainObject.getString("car_mark")  + " " + mainObject.getString("car_model") + "\n" +
+                                "Цвет: " + mainObject.getString("car_color") + "\n" + "Гос номер: " + mainObject.getString("car_number"));
+                        if(mainObject.has("crew_coords")){
+                            setMarkerDriver(mainObject.getJSONObject("crew_coords").getDouble("lat"), mainObject.getJSONObject("crew_coords").getDouble("lon"));
+                        }
+
+                    } else if (mainObject.getString("state_kind").equals("car_at_place") || mainObject.getString("state_kind").equals("client_inside")){
+                        progressBar.setVisibility(View.GONE);
+                        infoTextView.setText("Вас ожидает: \n" + "Автомобиль: " + mainObject.getString("car_mark")  + " " + mainObject.getString("car_model") + "\n" +
+                                "Цвет: " + mainObject.getString("car_color") + "\n" + "Гос номер: " + mainObject.getString("car_number"));
+                        if(mainObject.has("crew_coords")){
+                            setMarkerDriver(mainObject.getJSONObject("crew_coords").getDouble("lat"), mainObject.getJSONObject("crew_coords").getDouble("lon"));
+                        }
+
                     }
                 } else {
                     editor.remove("ORDER_ID");
@@ -136,6 +158,23 @@ public class CurrentOrderActivity extends AppCompatActivity {
             }
         });
         }
+
+    private void setMarkerDriver(double lat, double lon) {
+        pointDriver = new Point(lat, lon);
+        boundingBox = new BoundingBox(pointMe, pointDriver);
+        ///////////это надо переделать/////////
+        try {
+            mapView.getMap().getMapObjects().remove(markDriver);
+        } catch (Exception ignored){
+
+        }
+        markDriver = mapView.getMap().getMapObjects().addPlacemark(pointDriver, ImageProvider.fromResource(this, R.drawable.driver));
+        cameraPosition = mapView.getMap().cameraPosition(boundingBox);
+        mapView.getMap().move(new CameraPosition(cameraPosition.getTarget(), cameraPosition.getZoom() - 0.8f, cameraPosition.getAzimuth(), cameraPosition.getTilt()),
+                new Animation(Animation.Type.SMOOTH, 0f), null);
+
+
+    }
 
     @Override
     protected void onStop() {
@@ -168,12 +207,14 @@ public class CurrentOrderActivity extends AppCompatActivity {
                 PostRequest postRequest = new PostRequest(CurrentOrderActivity.this,url,params, hashApiKey);
                 postRequest.getString(new PostRequest.VolleyCallback() {
                     @Override
-                    public void onSuccess(String req, String jsonArray) throws JSONException {
+                    public void onSuccess(String req, String jsonArray){
+                        Log.d("HELLO", req);
                         if (req.equals("OK")){
                             editor.remove("ORDER_ID");
                             editor.apply();
                             startActivity(new Intent(CurrentOrderActivity.this, OrderActivity.class));
                         } else {
+                            Toast.makeText(CurrentOrderActivity.this, "Не удалось отменить заказ", Toast.LENGTH_SHORT).show();
                         }
                     }
                 });

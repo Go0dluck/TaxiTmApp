@@ -57,7 +57,7 @@ public class OrderActivity extends AppCompatActivity implements CameraListener {
     private LocationListener locationListener;
     private ProgressBar searchProgressBar;
     private TextInputLayout sourceTextLayout;
-    private TextInputLayout destTextLayout;
+    private TextInputLayout destTextLayout, podTextLayout, commentTextLayout;
     private String server;
     private String apiKey;
     private String url;
@@ -67,7 +67,7 @@ public class OrderActivity extends AppCompatActivity implements CameraListener {
     private String destZoneId;
     private String cityDist;
     private String countryDist;
-    private String sourceCountryDist;
+    private String sourceCountryDist, params, timeNow;
     private String crewGroupId;
     private Double my_lat, my_lon;
     private TextView summTextView;
@@ -97,7 +97,7 @@ public class OrderActivity extends AppCompatActivity implements CameraListener {
 
         searchManager = SearchFactory.getInstance().createSearchManager(SearchManagerType.COMBINED);
 
-        mapView = (MapView)findViewById(R.id.mapview);
+        mapView = findViewById(R.id.mapview);
         mapView.getMap().setRotateGesturesEnabled(false);
         mapView.getMap().move(new CameraPosition(new Point(55.75370903771494, 37.61981338262558), 18, 0, 0));
         //mapView.getMap().move(new CameraPosition(new Point(55.751574, 37.573856), 18.0f, 0.0f, 0.0f), new Animation(Animation.Type.SMOOTH, 5), null);
@@ -121,9 +121,9 @@ public class OrderActivity extends AppCompatActivity implements CameraListener {
         subscribeToLocationUpdate();
 
         sourceTextLayout = findViewById(R.id.sourceTextLayout);
-        TextInputLayout podTextLayout = findViewById(R.id.podTextLayout);
+        podTextLayout = findViewById(R.id.podTextLayout);
         destTextLayout = findViewById(R.id.destTextLayout);
-        TextInputLayout commentTextLayout = findViewById(R.id.commentTextLayout);
+        commentTextLayout = findViewById(R.id.commentTextLayout);
         Button createOrderButton = findViewById(R.id.createOrderButton);
         summTextView = findViewById(R.id.summTextView);
         searchProgressBar = findViewById(R.id.searchProgressBar);
@@ -211,6 +211,7 @@ public class OrderActivity extends AppCompatActivity implements CameraListener {
                         calcOrderCost(sourceZoneId, destZoneId, cityDist, countryDist, sourceCountryDist);
                     } else {
                         Toast.makeText(OrderActivity.this, "Анализ маршрута не получен", Toast.LENGTH_SHORT).show();
+                        summTextView.setText("Предварительная стоимость: 0р");
                     }
                 }
             });
@@ -245,6 +246,7 @@ public class OrderActivity extends AppCompatActivity implements CameraListener {
                     JSONObject mainObject = new JSONObject(jsonArray);
                     summTextView.setText("Предварительная стоимость: " + mainObject.getString("sum") + "р");
                 } else {
+                    Toast.makeText(OrderActivity.this, "Не удалось расчитать стоимость", Toast.LENGTH_SHORT).show();
                 }
             }
         });
@@ -268,6 +270,10 @@ public class OrderActivity extends AppCompatActivity implements CameraListener {
 
     }
 
+    @Override
+    public void onBackPressed() {
+    }
+
     private void subscribeToLocationUpdate() {
         if (locationManager != null && locationListener != null) {
             locationManager.subscribeForLocationUpdates(DESIRED_ACCURACY, MINIMAL_TIME, MINIMAL_DISTANCE, USE_IN_BACKGROUND, FilteringMode.OFF, locationListener);
@@ -277,11 +283,11 @@ public class OrderActivity extends AppCompatActivity implements CameraListener {
     ///Создаем заказ
     public void createOrder(View view) throws UnsupportedEncodingException {
 
-        SharedPreferences.Editor editor = sharedPreferences.edit();
-        editor.putString("ORDER_ID", "11080832");
-        editor.apply();
-        startActivity(new Intent(OrderActivity.this, CurrentOrderActivity.class));
-        /*@SuppressLint("SimpleDateFormat") SimpleDateFormat format = new SimpleDateFormat("yyyyMMddHHmmss");
+        //SharedPreferences.Editor editor = sharedPreferences.edit();
+        //editor.putString("ORDER_ID", "11082122");
+        //editor.apply();
+        //startActivity(new Intent(OrderActivity.this, CurrentOrderActivity.class));
+        @SuppressLint("SimpleDateFormat") SimpleDateFormat format = new SimpleDateFormat("yyyyMMddHHmmss");
         timeNow = format.format(new Date());
         String source = URLEncoder.encode(Objects.requireNonNull(sourceTextLayout.getEditText()).getText().toString().trim(), "UTF-8") + "* " + URLEncoder.encode(Objects.requireNonNull(podTextLayout.getEditText()).getText().toString().trim(), "UTF-8");
         String dest = URLEncoder.encode(Objects.requireNonNull(destTextLayout.getEditText()).getText().toString().trim(), "UTF-8");
@@ -311,7 +317,7 @@ public class OrderActivity extends AppCompatActivity implements CameraListener {
                     }
                 }
             });
-        }*/
+        }
     }
 
 
@@ -333,7 +339,7 @@ public class OrderActivity extends AppCompatActivity implements CameraListener {
                                 new Session.SearchListener() {
                                     @Override
                                     public void onSearchResponse(@NonNull Response response) {
-                                        sourceTextLayout.getEditText().setText(response.getCollection().getChildren().get(0).getObj().getName());
+                                        Objects.requireNonNull(sourceTextLayout.getEditText()).setText(Objects.requireNonNull(response.getCollection().getChildren().get(0).getObj()).getName());
                                         editor.putString("source_address", Objects.requireNonNull(sourceTextLayout.getEditText()).getText().toString().trim());
                                         editor.putString("source_address_lat", String.valueOf(mapView.getMap().getCameraPosition().getTarget().getLatitude()));
                                         editor.putString("source_address_lon", String.valueOf(mapView.getMap().getCameraPosition().getTarget().getLongitude()));
