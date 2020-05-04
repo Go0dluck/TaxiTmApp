@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:background="#FFE082"
+    android:layout_height="match_parent"
+    tools:context=".OrderActivity">
+
+
+    <RelativeLayout
+        android:id="@+id/mapLayout"
+        android:layout_above="@id/sourceLinearLayout"
+        android:layout_marginBottom="5dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <com.yandex.mapkit.mapview.MapView
+            android:id="@+id/mapview"
+            android:background="@android:color/white"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"/>
+
+        <ImageView
+            android:id="@+id/markerImageView"
+            android:paddingBottom="30dp"
+            android:layout_centerInParent="true"
+            android:src="@drawable/ic_location_on_black_24dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentStart="true"
+            android:layout_alignParentBottom="true"
+            android:onClick="searchMe"
+            android:layout_marginStart="10dp"
+            android:backgroundTint="@color/colorPrimary"
+            android:src="@drawable/ic_near_me_black_24dp" />
+
+    </RelativeLayout>
+    <LinearLayout
+        android:id="@+id/sourceLinearLayout"
+        android:layout_above="@id/destTextLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <ProgressBar
+            android:id="@+id/searchProgressBar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:visibility="gone"/>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/sourceTextLayout"
+            android:layout_weight="1"
+            android:focusableInTouchMode="true"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:textColor="@android:color/primary_text_light"
+                android:singleLine="true"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textSize="15sp"
+                android:inputType="text"
+                android:hint="Адрес подачи"/>
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/podTextLayout"
+            android:layout_weight="4"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:textColor="@android:color/primary_text_light"
+                android:singleLine="true"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textSize="15sp"
+                android:inputType="text"
+                android:hint="Подъезд"/>
+        </com.google.android.material.textfield.TextInputLayout>
+
+    </LinearLayout>
+
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/destTextLayout"
+        android:layout_width="match_parent"
+        android:layout_above="@id/commentTextLayout"
+        android:focusableInTouchMode="true"
+        android:layout_height="wrap_content">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:singleLine="true"
+            android:layout_width="match_parent"
+            android:textColor="@android:color/primary_text_light"
+            android:textSize="15sp"
+            android:hint="Адрес назначения"
+            android:layout_height="wrap_content" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/commentTextLayout"
+        android:layout_width="match_parent"
+        android:layout_above="@id/summTextView"
+        android:layout_height="wrap_content">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:singleLine="true"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Комментарий для водителя"
+            android:textColor="@android:color/primary_text_light"
+            android:textSize="15sp" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <TextView
+        android:id="@+id/summTextView"
+        android:text="Предварительная стоимость: 0р"
+        android:layout_above="@id/createOrderButton"
+        android:textStyle="bold"
+        android:gravity="center_horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
+
+    <Button
+        android:id="@+id/createOrderButton"
+        android:onClick="createOrder"
+        android:layout_alignParentBottom="true"
+        android:background="#FF6D00"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:layout_margin="5dp"
+        android:text="Заказать"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
+
+</RelativeLayout>

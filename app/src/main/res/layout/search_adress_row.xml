@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_margin="10dp"
+    android:layout_height="match_parent">
+
+    <ImageView
+        android:id="@+id/picImageView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/ic_location_city_black_24dp"/>
+
+    <TextView
+        android:id="@+id/adressTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="20sp"
+        android:layout_toRightOf="@id/picImageView"
+        android:text="Пункт или улица"/>
+
+    <TextView
+        android:id="@+id/cityTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Город"
+        android:layout_below="@id/adressTextView"
+        android:layout_toRightOf="@id/picImageView"/>
+
+</RelativeLayout>

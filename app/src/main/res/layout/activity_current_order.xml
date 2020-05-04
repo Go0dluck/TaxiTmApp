@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:background="#FFE082"
+    android:layout_height="match_parent"
+    tools:context=".CurrentOrderActivity">
+
+    <RelativeLayout
+        android:id="@+id/mapLayout"
+        android:layout_above="@id/progressBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <com.yandex.mapkit.mapview.MapView
+            android:id="@+id/mapview"
+            android:background="@android:color/white"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"/>
+    </RelativeLayout>
+
+    <ProgressBar
+        android:id="@+id/progressBar"
+        android:layout_above="@id/infoTextView"
+        android:layout_marginTop="15dp"
+        android:layout_gravity="center_horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <TextView
+        android:id="@+id/infoTextView"
+        android:layout_above="@id/cancelButton"
+        android:layout_marginTop="15dp"
+        android:textSize="20sp"
+        android:gravity="center_horizontal"
+        android:text="Идет поиск автомобиля..."
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/cancelButton"
+        android:onClick="abortedOrder"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:layout_margin="15dp"
+        app:backgroundTint="@color/colorPrimaryDark"
+        android:src="@android:drawable/ic_menu_close_clear_cancel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"/>
+
+</RelativeLayout>
