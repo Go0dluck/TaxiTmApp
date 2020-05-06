@@ -43,7 +43,7 @@ import javax.net.ssl.X509TrustManager;
 
 public class CurrentOrderActivity extends AppCompatActivity {
     private MapView mapView;
-    private String server, apiKey, order_id, params, url, hashApiKey, abortedStateId;
+    private String server, apiKey, order_id, params, url, hashApiKey, abortedStateId, callKey, callServer;
     private SharedPreferences.Editor editor;
 
     private ProgressBar progressBar;
@@ -53,6 +53,13 @@ public class CurrentOrderActivity extends AppCompatActivity {
     private CameraPosition cameraPosition;
     private PlacemarkMapObject markMe, markDriver;
     private Point pointMe, pointDriver;
+
+    private GetRequest getRequest;
+    private PostRequest postRequest;
+    private PostRequestXML postRequestXML;
+
+    private Boolean getDriverOrder = false;
+    private ImageProvider driverImageProvider;
 
     @SuppressLint("CommitPrefEdits")
     @Override
@@ -75,15 +82,25 @@ public class CurrentOrderActivity extends AppCompatActivity {
         pointMe = new Point(55.768351, 49.153199);
 
         mapView = findViewById(R.id.mapview);
+
+        mapView.getMap().setScrollGesturesEnabled(false);
+        mapView.getMap().setZoomGesturesEnabled(false);
+        mapView.getMap().setTiltGesturesEnabled(false);
+        mapView.getMap().setRotateGesturesEnabled(false);
+
         mapView.getMap().move(new CameraPosition(pointMe, 14.0f, 0.0f, 0.0f),new Animation(Animation.Type.SMOOTH, 1),null);
         markMe = mapView.getMap().getMapObjects().addPlacemark(pointMe, ImageProvider.fromResource(this, R.drawable.marker));
-        markDriver = mapView.getMap().getMapObjects().addPlacemark(new Point(0, 0), ImageProvider.fromResource(this, R.drawable.driver));
-        mapView.getMap().getMapObjects().remove(markDriver);
+        //markDriver = mapView.getMap().getMapObjects().addPlacemark(new Point(0, 0), ImageProvider.fromResource(this, R.drawable.driver));
+        //mapView.getMap().getMapObjects().remove(markDriver);
+
+        driverImageProvider = ImageProvider.fromResource(this, R.drawable.driver);
 
         SettingsServer settingsServer = new SettingsServer();
         server = settingsServer.getServer();
         apiKey = settingsServer.getApiKey();
         abortedStateId = settingsServer.getAbortedStateId();
+        callKey = settingsServer.getCallKey();
+        callServer = settingsServer.getCallServer();
 
 
 
@@ -104,14 +121,13 @@ public class CurrentOrderActivity extends AppCompatActivity {
         url = server + "get_order_state?" + params;
         Md5Hash md5Hash = new Md5Hash();
         hashApiKey = md5Hash.md5(params + apiKey);
-        GetRequest getRequest = new GetRequest(this,url,params, hashApiKey);
+        getRequest = new GetRequest(this,url,params, hashApiKey);
         getRequest.getString(new GetRequest.VolleyCallback() {
             @SuppressLint("SetTextI18n")
             @Override
             public void onSuccess(String req, String jsonArray) throws JSONException {
                 if (req.equals("OK")) {
                     JSONObject mainObject = new JSONObject(jsonArray);
-                    Log.d("HELLO", mainObject.toString());
                         //ТУТ НАДО ПРЕДУМАТЬ КАК УВЕДОМЛЯТЬ О УСПЕШНОМ ИЛИ ОТМЕНЕНОМ ЗАКАЗЕ
                     if (mainObject.getString("state_kind").equals("finished")){
                         editor.remove("ORDER_ID");
@@ -126,13 +142,17 @@ public class CurrentOrderActivity extends AppCompatActivity {
                             || (mainObject.getString("state_kind").equals("driver_assigned") & mainObject.getString("confirmed").equals("not_confirmed"))){
                         progressBar.setVisibility(View.VISIBLE);
                         infoTextView.setText("Идет поиск автомобиля...");
-                        mapView.getMap().move(new CameraPosition(pointMe, 14.0f, 0.0f, 0.0f),new Animation(Animation.Type.SMOOTH, 1),null);
-                        ///////////это надо переделать/////////
-                        try {
-                            mapView.getMap().getMapObjects().remove(markDriver);
-                        } catch (Exception ignored){
+                        if (getDriverOrder){
+                            mapView.getMap().move(new CameraPosition(pointMe, 14.0f, 0.0f, 0.0f),new Animation(Animation.Type.SMOOTH, 1),null);
+                            ///////////это надо переделать/////////
+                            try {
+                                mapView.getMap().getMapObjects().remove(markDriver);
+                            } catch (Exception ignored){
 
+                            }
+                            getDriverOrder = false;
                         }
+
                     } else if (mainObject.getString("state_kind").equals("driver_assigned") & !mainObject.getString("confirmed").equals("not_confirmed")){
                         progressBar.setVisibility(View.GONE);
                         infoTextView.setText("К вам подъедет: \n" + "Автомобиль: " + mainObject.getString("car_mark")  + " " + mainObject.getString("car_model") + "\n" +
@@ -161,18 +181,22 @@ public class CurrentOrderActivity extends AppCompatActivity {
 
     private void setMarkerDriver(double lat, double lon) {
         pointDriver = new Point(lat, lon);
-        boundingBox = new BoundingBox(pointMe, pointDriver);
-        ///////////это надо переделать/////////
-        try {
-            mapView.getMap().getMapObjects().remove(markDriver);
-        } catch (Exception ignored){
 
+        ///////////это надо переделать/////////
+        if(getDriverOrder){
+            try {
+                mapView.getMap().getMapObjects().remove(markDriver);
+            } catch (Exception ignored){
+
+            }
         }
-        markDriver = mapView.getMap().getMapObjects().addPlacemark(pointDriver, ImageProvider.fromResource(this, R.drawable.driver));
+
+        markDriver = mapView.getMap().getMapObjects().addPlacemark(pointDriver, driverImageProvider);
+        boundingBox = new BoundingBox(pointMe, pointDriver);
         cameraPosition = mapView.getMap().cameraPosition(boundingBox);
         mapView.getMap().move(new CameraPosition(cameraPosition.getTarget(), cameraPosition.getZoom() - 0.8f, cameraPosition.getAzimuth(), cameraPosition.getTilt()),
                 new Animation(Animation.Type.SMOOTH, 0f), null);
-
+        getDriverOrder = true;
 
     }
 
@@ -204,7 +228,7 @@ public class CurrentOrderActivity extends AppCompatActivity {
                 url = server + "change_order_state?" + params;
                 Md5Hash md5Hash = new Md5Hash();
                 hashApiKey = md5Hash.md5(params + apiKey);
-                PostRequest postRequest = new PostRequest(CurrentOrderActivity.this,url,params, hashApiKey);
+                postRequest = new PostRequest(CurrentOrderActivity.this,url,params, hashApiKey);
                 postRequest.getString(new PostRequest.VolleyCallback() {
                     @Override
                     public void onSuccess(String req, String jsonArray){
@@ -229,5 +253,34 @@ public class CurrentOrderActivity extends AppCompatActivity {
     }
 
 
+    public void callDriver(View view) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setCancelable(false);
+        builder.setTitle("Предупреждение !");
+        builder.setMessage("Соединить Вас с водителем ?");
+        builder.setPositiveButton("Да !", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                params = "order_id=" + order_id;
+                Md5Hash md5Hash = new Md5Hash();
+                hashApiKey = md5Hash.md5(params + callKey);
+                params = "order_id=" + order_id + "&signature=" + hashApiKey;
+                url = callServer + "connect_client_and_driver?" + params;
+                postRequestXML = new PostRequestXML(CurrentOrderActivity.this,url,params, hashApiKey);
+                postRequestXML.getString(new PostRequestXML.VolleyCallback() {
+                    @Override
+                    public void onSuccess(String req){
+                        Log.d("RESPONSE", req);
+                    }
+                });
 
+            }
+        }).setNegativeButton("НЕТ !", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+            }
+        });
+        builder.create().show();
+
+    }
 }

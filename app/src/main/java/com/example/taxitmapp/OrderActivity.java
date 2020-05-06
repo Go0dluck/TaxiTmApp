@@ -11,6 +11,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ProgressBar;
@@ -73,6 +74,9 @@ public class OrderActivity extends AppCompatActivity implements CameraListener {
     private TextView summTextView;
     private SharedPreferences sharedPreferences;
     private SharedPreferences.Editor editor;
+    private GetRequest getRequest;
+    private PostRequestParams postRequest;
+    private PostRequest postPay;
 
     long latest = 0;
     long delay = 2000;
@@ -98,10 +102,12 @@ public class OrderActivity extends AppCompatActivity implements CameraListener {
         searchManager = SearchFactory.getInstance().createSearchManager(SearchManagerType.COMBINED);
 
         mapView = findViewById(R.id.mapview);
+        mapView.getMap().setTiltGesturesEnabled(false);
         mapView.getMap().setRotateGesturesEnabled(false);
         mapView.getMap().move(new CameraPosition(new Point(55.75370903771494, 37.61981338262558), 18, 0, 0));
         //mapView.getMap().move(new CameraPosition(new Point(55.751574, 37.573856), 18.0f, 0.0f, 0.0f), new Animation(Animation.Type.SMOOTH, 5), null);
         mapView.getMap().addCameraListener(this);
+
         locationManager = MapKitFactory.getInstance().createLocationManager();
         locationListener = new LocationListener() {
             @Override
@@ -197,7 +203,7 @@ public class OrderActivity extends AppCompatActivity implements CameraListener {
             url = server + "analyze_route?" + params;
             Md5Hash md5Hash = new Md5Hash();
             hashApiKey = md5Hash.md5(params + apiKey);
-            GetRequest getRequest = new GetRequest(this, url, params, hashApiKey);
+            getRequest = new GetRequest(this, url, params, hashApiKey);
             getRequest.getString(new GetRequest.VolleyCallback() {
                 @Override
                 public void onSuccess(String req, String jsonArray) throws JSONException {
@@ -237,7 +243,7 @@ public class OrderActivity extends AppCompatActivity implements CameraListener {
         url = server + "calc_order_cost2";
         Md5Hash md5Hash = new Md5Hash();
         hashApiKey = md5Hash.md5(parameters + apiKey);
-        PostRequestParams postRequest = new PostRequestParams(this, url, params, hashApiKey);
+        postRequest = new PostRequestParams(this, url, params, hashApiKey);
         postRequest.getString(new PostRequestParams.VolleyCallback() {
             @SuppressLint("SetTextI18n")
             @Override
@@ -283,11 +289,11 @@ public class OrderActivity extends AppCompatActivity implements CameraListener {
     ///Создаем заказ
     public void createOrder(View view) throws UnsupportedEncodingException {
 
-        //SharedPreferences.Editor editor = sharedPreferences.edit();
-        //editor.putString("ORDER_ID", "11082122");
-        //editor.apply();
-        //startActivity(new Intent(OrderActivity.this, CurrentOrderActivity.class));
-        @SuppressLint("SimpleDateFormat") SimpleDateFormat format = new SimpleDateFormat("yyyyMMddHHmmss");
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.putString("ORDER_ID", "11083370");
+        editor.apply();
+        startActivity(new Intent(OrderActivity.this, CurrentOrderActivity.class));
+        /*@SuppressLint("SimpleDateFormat") SimpleDateFormat format = new SimpleDateFormat("yyyyMMddHHmmss");
         timeNow = format.format(new Date());
         String source = URLEncoder.encode(Objects.requireNonNull(sourceTextLayout.getEditText()).getText().toString().trim(), "UTF-8") + "* " + URLEncoder.encode(Objects.requireNonNull(podTextLayout.getEditText()).getText().toString().trim(), "UTF-8");
         String dest = URLEncoder.encode(Objects.requireNonNull(destTextLayout.getEditText()).getText().toString().trim(), "UTF-8");
@@ -301,7 +307,7 @@ public class OrderActivity extends AppCompatActivity implements CameraListener {
             url = server + "create_order?" + params;
             Md5Hash md5Hash = new Md5Hash();
             hashApiKey = md5Hash.md5(params + apiKey);
-            PostRequest postPay = new PostRequest(this,url,params, hashApiKey);
+            postPay = new PostRequest(this,url,params, hashApiKey);
             postPay.getString(new PostRequest.VolleyCallback() {
                 @Override
                 public void onSuccess(String req, String jsonArray) throws JSONException {
@@ -317,7 +323,7 @@ public class OrderActivity extends AppCompatActivity implements CameraListener {
                     }
                 }
             });
-        }
+        }*/
     }
 
 

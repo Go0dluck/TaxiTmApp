@@ -1,18 +1,24 @@
 package com.example.taxitmapp;
 
-public class SettingsServer {
-    private String server = "https://194.176.118.233:8089/common_api/1.0/";
-    private String apiKey = "23oli;hfghdfaslikvghfkljsvghghf";
-    private String crewGroupId = "17";
-    private String abortedStateId = "129";
+class SettingsServer {
 
-    public String getServer() { return server; }
+    String getServer() {
+        return "https://194.176.118.233:8089/common_api/1.0/"; }
 
-    public String getApiKey() {
-        return apiKey;
+    String getApiKey() {
+        return "23oli;hfghdfaslikvghfkljsvghghf";
     }
 
-    public String getCrewGroupId() { return crewGroupId; }
+    String getCrewGroupId() {
+        return "17"; }
 
-    public String getAbortedStateId() { return abortedStateId; }
+    String getAbortedStateId() {
+        return "129"; }
+
+    String getCallKey() {
+        return "23fdhxdtfshjfjhfjhkjj,lhkg,l"; }
+
+    String getCallServer(){
+        return "https://194.176.118.233:8089/tm_tapi/1.0/";
+    }
 }

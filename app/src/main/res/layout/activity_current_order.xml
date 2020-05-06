@@ -49,4 +49,15 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"/>
 
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/callDriverButton"
+        android:onClick="callDriver"
+        android:layout_alignParentBottom="true"
+        android:layout_toStartOf="@id/cancelButton"
+        android:layout_margin="15dp"
+        app:backgroundTint="@color/colorPrimaryDark"
+        android:src="@drawable/ic_phone_in_talk_black_24dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"/>
+
 </RelativeLayout>

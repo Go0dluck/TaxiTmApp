@@ -10,6 +10,9 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
@@ -30,14 +33,15 @@
             android:name="com.google.android.geo.API_KEY"
             android:value="@string/google_maps_key" />
 
-        <activity android:name=".CurrentOrderActivity" />
-        <activity android:name=".SearchAddressActivity" />
-        <activity android:name=".OrderActivity" />
+        <activity android:name=".CurrentOrderActivity" android:screenOrientation="locked"/>
+        <activity android:name=".SearchAddressActivity" android:screenOrientation="locked"/>
+        <activity android:name=".OrderActivity" android:screenOrientation="locked"/>
         <activity
+            android:screenOrientation="locked"
             android:name=".OrderActivity_old"
             android:label="@string/title_activity_order" />
-        <activity android:name=".RegisterActivity" />
-        <activity android:name=".SplashActivity">
+        <activity android:name=".RegisterActivity" android:screenOrientation="locked"/>
+        <activity android:name=".SplashActivity" android:screenOrientation="locked">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
