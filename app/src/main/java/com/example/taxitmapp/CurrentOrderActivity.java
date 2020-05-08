@@ -2,8 +2,13 @@ package com.example.taxitmapp;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.NotificationCompat;
+import androidx.core.content.ContextCompat;
 
+import android.Manifest;
 import android.annotation.SuppressLint;
+import android.app.Notification;
+import android.app.NotificationManager;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -58,7 +63,7 @@ public class CurrentOrderActivity extends AppCompatActivity {
     private PostRequest postRequest;
     private PostRequestXML postRequestXML;
 
-    private Boolean getDriverOrder = false;
+    private Boolean getDriverOrder = false, notificationGetDriver = false, notificationMoveDriver = false;
     private ImageProvider driverImageProvider;
 
     @SuppressLint("CommitPrefEdits")
@@ -78,11 +83,9 @@ public class CurrentOrderActivity extends AppCompatActivity {
         infoTextView = findViewById(R.id.infoTextView);
         ImageButton cancelButton = findViewById(R.id.cancelButton);
 
-        //pointMe = new Point(Double.parseDouble(sharedPreferences.getString("source_address_lat", "")), Double.parseDouble(sharedPreferences.getString("source_address_lon", "")));
         pointMe = new Point(55.768351, 49.153199);
 
         mapView = findViewById(R.id.mapview);
-
         mapView.getMap().setScrollGesturesEnabled(false);
         mapView.getMap().setZoomGesturesEnabled(false);
         mapView.getMap().setTiltGesturesEnabled(false);
@@ -90,8 +93,6 @@ public class CurrentOrderActivity extends AppCompatActivity {
 
         mapView.getMap().move(new CameraPosition(pointMe, 14.0f, 0.0f, 0.0f),new Animation(Animation.Type.SMOOTH, 1),null);
         markMe = mapView.getMap().getMapObjects().addPlacemark(pointMe, ImageProvider.fromResource(this, R.drawable.marker));
-        //markDriver = mapView.getMap().getMapObjects().addPlacemark(new Point(0, 0), ImageProvider.fromResource(this, R.drawable.driver));
-        //mapView.getMap().getMapObjects().remove(markDriver);
 
         driverImageProvider = ImageProvider.fromResource(this, R.drawable.driver);
 
@@ -142,9 +143,14 @@ public class CurrentOrderActivity extends AppCompatActivity {
                             || (mainObject.getString("state_kind").equals("driver_assigned") & mainObject.getString("confirmed").equals("not_confirmed"))){
                         progressBar.setVisibility(View.VISIBLE);
                         infoTextView.setText("Идет поиск автомобиля...");
+                        if (notificationGetDriver){
+                            notificationGetDriver = false;
+                        }
+                        if (notificationMoveDriver){
+                            notificationMoveDriver = false;
+                        }
                         if (getDriverOrder){
                             mapView.getMap().move(new CameraPosition(pointMe, 14.0f, 0.0f, 0.0f),new Animation(Animation.Type.SMOOTH, 1),null);
-                            ///////////это надо переделать/////////
                             try {
                                 mapView.getMap().getMapObjects().remove(markDriver);
                             } catch (Exception ignored){
@@ -160,6 +166,8 @@ public class CurrentOrderActivity extends AppCompatActivity {
                         if(mainObject.has("crew_coords")){
                             setMarkerDriver(mainObject.getJSONObject("crew_coords").getDouble("lat"), mainObject.getJSONObject("crew_coords").getDouble("lon"));
                         }
+                        callNotification("Водитель назначен", "Автомобиль: " + mainObject.getString("car_mark")  + " " + mainObject.getString("car_model") + "\n" +
+                                "Цвет: " + mainObject.getString("car_color") + "\n" + "Гос номер: " + mainObject.getString("car_number"));
 
                     } else if (mainObject.getString("state_kind").equals("car_at_place") || mainObject.getString("state_kind").equals("client_inside")){
                         progressBar.setVisibility(View.GONE);
@@ -168,7 +176,8 @@ public class CurrentOrderActivity extends AppCompatActivity {
                         if(mainObject.has("crew_coords")){
                             setMarkerDriver(mainObject.getJSONObject("crew_coords").getDouble("lat"), mainObject.getJSONObject("crew_coords").getDouble("lon"));
                         }
-
+                        callNotificationMove("Водитель ожидает", "Автомобиль: " + mainObject.getString("car_mark")  + " " + mainObject.getString("car_model") + "\n" +
+                                "Цвет: " + mainObject.getString("car_color") + "\n" + "Гос номер: " + mainObject.getString("car_number"));
                     }
                 } else {
                     editor.remove("ORDER_ID");
@@ -282,5 +291,37 @@ public class CurrentOrderActivity extends AppCompatActivity {
         });
         builder.create().show();
 
+    }
+
+    public void callNotification(String title, String text){
+        if(!notificationGetDriver){
+            NotificationCompat.Builder builder = new NotificationCompat.Builder(this)
+                    .setSmallIcon(R.mipmap.ic_launcher)
+                    .setContentTitle(title)
+                    .setContentText(text)
+                    .setShowWhen(true)
+                    .setStyle(new NotificationCompat.BigTextStyle().bigText(text));
+            Notification notification = builder.build();
+            NotificationManager notificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+            assert notificationManager != null;
+            notificationManager.notify(1, notification);
+            notificationGetDriver = true;
+        }
+    }
+
+    public void callNotificationMove(String title, String text){
+        if(!notificationMoveDriver){
+            NotificationCompat.Builder builder = new NotificationCompat.Builder(this)
+                    .setSmallIcon(R.mipmap.ic_launcher)
+                    .setContentTitle(title)
+                    .setContentText(text)
+                    .setShowWhen(true)
+                    .setStyle(new NotificationCompat.BigTextStyle().bigText(text));
+            Notification notification = builder.build();
+            NotificationManager notificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+            assert notificationManager != null;
+            notificationManager.notify(2, notification);
+            notificationMoveDriver = true;
+        }
     }
 }

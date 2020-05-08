@@ -2,11 +2,18 @@ package com.example.taxitmapp;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.app.NotificationCompat;
+import androidx.core.content.ContextCompat;
 
+import android.Manifest;
 import android.annotation.SuppressLint;
+import android.app.Notification;
+import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -53,6 +60,7 @@ import java.util.HashMap;
 import java.util.Objects;
 
 public class OrderActivity extends AppCompatActivity implements CameraListener {
+    private static final int REQUEST_CODE_PERMISSION_FINE_LOCATION = 777;
     private MapView mapView;
     private LocationManager locationManager;
     private LocationListener locationListener;
@@ -90,6 +98,33 @@ public class OrderActivity extends AppCompatActivity implements CameraListener {
     public static final int COMFORTABLE_ZOOM_LEVEL = 18;
 
     @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        if (requestCode == REQUEST_CODE_PERMISSION_FINE_LOCATION) {
+            if (grantResults.length > 0
+                    && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                // permission granted
+                locationManager = MapKitFactory.getInstance().createLocationManager();
+                locationListener = new LocationListener() {
+                    @Override
+                    public void onLocationUpdated(@NonNull Location location) {
+                        my_lat = location.getPosition().getLatitude();
+                        my_lon = location.getPosition().getLongitude();
+                        mapView.getMap().move(
+                                new CameraPosition(new Point(my_lat, my_lon), 18.0f, 0.0f, 0.0f),
+                                new Animation(Animation.Type.SMOOTH, 1),
+                                null);
+                    }
+
+                    @Override
+                    public void onLocationStatusUpdated(@NonNull LocationStatus locationStatus) {
+                    }
+                };
+                subscribeToLocationUpdate();
+            }  // permission denied
+        }
+    }
+
+    @Override
     protected void onCreate(Bundle savedInstanceState) {
         String MAPKIT_API_KEY = "331a7ae7-9f07-4053-8010-41cfb9f289c0";
         MapKitFactory.setApiKey(MAPKIT_API_KEY);
@@ -108,23 +143,30 @@ public class OrderActivity extends AppCompatActivity implements CameraListener {
         //mapView.getMap().move(new CameraPosition(new Point(55.751574, 37.573856), 18.0f, 0.0f, 0.0f), new Animation(Animation.Type.SMOOTH, 5), null);
         mapView.getMap().addCameraListener(this);
 
-        locationManager = MapKitFactory.getInstance().createLocationManager();
-        locationListener = new LocationListener() {
-            @Override
-            public void onLocationUpdated(@NonNull Location location) {
-                my_lat = location.getPosition().getLatitude();
-                my_lon = location.getPosition().getLongitude();
-                mapView.getMap().move(
-                        new CameraPosition(new Point(my_lat, my_lon), 18.0f, 0.0f, 0.0f),
-                        new Animation(Animation.Type.SMOOTH, 1),
-                        null);
-            }
+        int permissionStatus = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION);
 
-            @Override
-            public void onLocationStatusUpdated(@NonNull LocationStatus locationStatus) {
-            }
-        };
-        subscribeToLocationUpdate();
+        if (permissionStatus == PackageManager.PERMISSION_GRANTED) {
+            locationManager = MapKitFactory.getInstance().createLocationManager();
+            locationListener = new LocationListener() {
+                @Override
+                public void onLocationUpdated(@NonNull Location location) {
+                    my_lat = location.getPosition().getLatitude();
+                    my_lon = location.getPosition().getLongitude();
+                    mapView.getMap().move(
+                            new CameraPosition(new Point(my_lat, my_lon), 18.0f, 0.0f, 0.0f),
+                            new Animation(Animation.Type.SMOOTH, 1),
+                            null);
+                }
+
+                @Override
+                public void onLocationStatusUpdated(@NonNull LocationStatus locationStatus) {
+                }
+            };
+            subscribeToLocationUpdate();
+        } else {
+            ActivityCompat.requestPermissions(this, new String[] {Manifest.permission.ACCESS_FINE_LOCATION},
+                    REQUEST_CODE_PERMISSION_FINE_LOCATION);
+        }
 
         sourceTextLayout = findViewById(R.id.sourceTextLayout);
         podTextLayout = findViewById(R.id.podTextLayout);
@@ -290,7 +332,7 @@ public class OrderActivity extends AppCompatActivity implements CameraListener {
     public void createOrder(View view) throws UnsupportedEncodingException {
 
         SharedPreferences.Editor editor = sharedPreferences.edit();
-        editor.putString("ORDER_ID", "11083370");
+        editor.putString("ORDER_ID", "11084221");
         editor.apply();
         startActivity(new Intent(OrderActivity.this, CurrentOrderActivity.class));
         /*@SuppressLint("SimpleDateFormat") SimpleDateFormat format = new SimpleDateFormat("yyyyMMddHHmmss");
