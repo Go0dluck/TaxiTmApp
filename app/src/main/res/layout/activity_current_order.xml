@@ -3,13 +3,12 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:background="#FFE082"
     android:layout_height="match_parent"
     tools:context=".CurrentOrderActivity">
 
     <RelativeLayout
         android:id="@+id/mapLayout"
-        android:layout_above="@id/progressBar"
+        android:layout_above="@id/sumTextView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
 
@@ -19,6 +18,16 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"/>
     </RelativeLayout>
+
+    <TextView
+        android:id="@+id/sumTextView"
+        android:layout_width="match_parent"
+        android:textColor="@android:color/holo_red_light"
+        android:textStyle="bold"
+        android:layout_height="wrap_content"
+        android:textSize="20sp"
+        android:gravity="center_horizontal"
+        android:layout_above="@id/progressBar"/>
 
     <ProgressBar
         android:id="@+id/progressBar"
@@ -33,8 +42,8 @@
         android:layout_above="@id/cancelButton"
         android:layout_marginTop="15dp"
         android:textSize="20sp"
+        android:textStyle="bold"
         android:gravity="center_horizontal"
-        android:text="Идет поиск автомобиля..."
         android:layout_width="match_parent"
         android:layout_height="wrap_content"/>
 
@@ -52,6 +61,7 @@
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/callDriverButton"
         android:onClick="callDriver"
+        android:visibility="gone"
         android:layout_alignParentBottom="true"
         android:layout_toStartOf="@id/cancelButton"
         android:layout_margin="15dp"

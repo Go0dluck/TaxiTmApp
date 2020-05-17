@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".WishesActivity">
+
+    <ListView
+        android:id="@+id/wishesListView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_above="@id/okButton"/>
+
+    <Button
+        android:id="@+id/okButton"
+        android:text="OK"
+        android:onClick="closeParametrs"
+        android:background="#FF6D00"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:layout_margin="5dp"
+        android:layout_alignParentBottom="true"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
+</RelativeLayout>

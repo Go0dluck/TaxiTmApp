@@ -1,23 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:orientation="vertical"
     android:layout_height="match_parent"
     tools:context=".SearchAddressActivity">
 
-    <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/searchAddressTextInput"
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_margin="10dp"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
 
-        <com.google.android.material.textfield.TextInputEditText
-            android:singleLine="true"
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/searchAddressTextInput"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"/>
-    </com.google.android.material.textfield.TextInputLayout>
+            android:layout_margin="10dp"
+            android:layout_height="wrap_content">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:singleLine="true"
+                android:drawableStart="@drawable/ic_location_searching_black_24dp"
+                android:padding="10dp"
+                android:textColor="@android:color/black"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"/>
+        </com.google.android.material.textfield.TextInputLayout>
+
+    </LinearLayout>
 
     <ProgressBar
         android:id="@+id/progressBar"
@@ -26,7 +36,6 @@
         android:visibility="gone"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" />
-
 
     <ListView
         android:id="@+id/addressListView"

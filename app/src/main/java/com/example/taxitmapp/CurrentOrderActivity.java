@@ -3,25 +3,24 @@ package com.example.taxitmapp;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.NotificationCompat;
-import androidx.core.content.ContextCompat;
+import androidx.core.app.NotificationManagerCompat;
 
-import android.Manifest;
 import android.annotation.SuppressLint;
-import android.app.Notification;
+import android.app.NotificationChannel;
 import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.os.Build;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
-import android.widget.Button;
-import android.widget.ImageButton;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.yandex.mapkit.Animation;
 import com.yandex.mapkit.MapKitFactory;
 import com.yandex.mapkit.geometry.BoundingBox;
@@ -37,6 +36,8 @@ import org.json.JSONObject;
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import javax.net.ssl.HostnameVerifier;
@@ -47,12 +48,17 @@ import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
 public class CurrentOrderActivity extends AppCompatActivity {
+    private ScheduledFuture<?> result;
+    private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
+    public static final String CHANNEL_ID = "TMTAXICHANNELID"; // ид канала уведомлений
+
     private MapView mapView;
     private String server, apiKey, order_id, params, url, hashApiKey, abortedStateId, callKey, callServer;
     private SharedPreferences.Editor editor;
 
     private ProgressBar progressBar;
-    private TextView infoTextView;
+    private TextView infoTextView, sumTextView;
+    private FloatingActionButton cancelButton, callButton;
 
     private BoundingBox boundingBox;
     private CameraPosition cameraPosition;
@@ -62,8 +68,10 @@ public class CurrentOrderActivity extends AppCompatActivity {
     private GetRequest getRequest;
     private PostRequest postRequest;
     private PostRequestXML postRequestXML;
+    private GetRequestXML getRequestXML;
 
-    private Boolean getDriverOrder = false, notificationGetDriver = false, notificationMoveDriver = false;
+    private Boolean getDriverOrder = false, notificationPassangerGetDriver = false, notificationPassangerMoveDriver = false;
+
     private ImageProvider driverImageProvider;
 
     @SuppressLint("CommitPrefEdits")
@@ -81,20 +89,22 @@ public class CurrentOrderActivity extends AppCompatActivity {
 
         progressBar = findViewById(R.id.progressBar);
         infoTextView = findViewById(R.id.infoTextView);
-        ImageButton cancelButton = findViewById(R.id.cancelButton);
+        cancelButton = findViewById(R.id.cancelButton);
+        callButton = findViewById(R.id.callDriverButton);
+        sumTextView = findViewById(R.id.sumTextView);
 
-        pointMe = new Point(55.768351, 49.153199);
-
+        handleSSLHandshake();
+        // создаем маркер с точкой подачи отключаем все действия с картой
+        pointMe = new Point(55.371157, 52.735562);
         mapView = findViewById(R.id.mapview);
         mapView.getMap().setScrollGesturesEnabled(false);
         mapView.getMap().setZoomGesturesEnabled(false);
         mapView.getMap().setTiltGesturesEnabled(false);
         mapView.getMap().setRotateGesturesEnabled(false);
-
         mapView.getMap().move(new CameraPosition(pointMe, 14.0f, 0.0f, 0.0f),new Animation(Animation.Type.SMOOTH, 1),null);
-        markMe = mapView.getMap().getMapObjects().addPlacemark(pointMe, ImageProvider.fromResource(this, R.drawable.marker));
+        markMe = mapView.getMap().getMapObjects().addPlacemark(pointMe, ImageProvider.fromResource(this, R.drawable.marker)); // иконка маркера подачи
 
-        driverImageProvider = ImageProvider.fromResource(this, R.drawable.driver);
+        driverImageProvider = ImageProvider.fromResource(this, R.drawable.driver); // иконка маркера водителя
 
         SettingsServer settingsServer = new SettingsServer();
         server = settingsServer.getServer();
@@ -103,21 +113,36 @@ public class CurrentOrderActivity extends AppCompatActivity {
         callKey = settingsServer.getCallKey();
         callServer = settingsServer.getCallServer();
 
+        createNotificationChannel();
 
-
-        Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(new Runnable() {
+        result = executorService.scheduleAtFixedRate(new Runnable() { // каждые 5 сек обновляем инфу о заказе и автомобиле
             @Override
             public void run() {
                 getInfoOrderId(server, apiKey, order_id);
             }
         }, 1, 5, TimeUnit.SECONDS);
 
-    }
 
+    }
+    // создаем канал уведомлений для android 8 и выше
+    private void createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            CharSequence name = "TaxiTM";
+            String description = "TaxiTMdescription";
+            int importance = NotificationManager.IMPORTANCE_DEFAULT;
+            NotificationChannel channel = new NotificationChannel(CHANNEL_ID, name, importance);
+            channel.setDescription(description);
+            NotificationManager notificationManager = getSystemService(NotificationManager.class);
+            assert notificationManager != null;
+            notificationManager.createNotificationChannel(channel);
+        }
+    }
+    // отключаем кнопку назад
     @Override
     public void onBackPressed() { }
 
     private void getInfoOrderId(String server, String apiKey, String order_id) {
+        getInfoSum();
         params = "order_id=" + order_id;
         url = server + "get_order_state?" + params;
         Md5Hash md5Hash = new Md5Hash();
@@ -133,51 +158,55 @@ public class CurrentOrderActivity extends AppCompatActivity {
                     if (mainObject.getString("state_kind").equals("finished")){
                         editor.remove("ORDER_ID");
                         editor.apply();
+                        callNotification("Заказ успешно завершен", "Благодарим Вас за заказ, ждём Вас снова!");
+                        result.cancel(true);
                         finish();
                         //ТУТ НАДО ПРЕДУМАТЬ КАК УВЕДОМЛЯТЬ О УСПЕШНОМ ИЛИ ОТМЕНЕНОМ ЗАКАЗЕ
                     } else if (mainObject.getString("state_kind").equals("aborted")){
                         editor.remove("ORDER_ID");
                         editor.apply();
+                        callNotification("Заказ отменен", "К сожалению Ваш заказ отменен, ждём Вас снова!");
+                        result.cancel(true);
                         finish();
                     } else if (mainObject.getString("state_kind").equals("new_order")
                             || (mainObject.getString("state_kind").equals("driver_assigned") & mainObject.getString("confirmed").equals("not_confirmed"))){
                         progressBar.setVisibility(View.VISIBLE);
                         infoTextView.setText("Идет поиск автомобиля...");
-                        if (notificationGetDriver){
-                            notificationGetDriver = false;
-                        }
-                        if (notificationMoveDriver){
-                            notificationMoveDriver = false;
-                        }
+                        callButton.setVisibility(View.GONE);
+                        notificationPassangerGetDriver = false;
+                        notificationPassangerMoveDriver = false;
                         if (getDriverOrder){
                             mapView.getMap().move(new CameraPosition(pointMe, 14.0f, 0.0f, 0.0f),new Animation(Animation.Type.SMOOTH, 1),null);
                             try {
                                 mapView.getMap().getMapObjects().remove(markDriver);
                             } catch (Exception ignored){
-
                             }
                             getDriverOrder = false;
                         }
 
                     } else if (mainObject.getString("state_kind").equals("driver_assigned") & !mainObject.getString("confirmed").equals("not_confirmed")){
                         progressBar.setVisibility(View.GONE);
+                        callButton.setVisibility(View.VISIBLE);
                         infoTextView.setText("К вам подъедет: \n" + "Автомобиль: " + mainObject.getString("car_mark")  + " " + mainObject.getString("car_model") + "\n" +
                                 "Цвет: " + mainObject.getString("car_color") + "\n" + "Гос номер: " + mainObject.getString("car_number"));
                         if(mainObject.has("crew_coords")){
                             setMarkerDriver(mainObject.getJSONObject("crew_coords").getDouble("lat"), mainObject.getJSONObject("crew_coords").getDouble("lon"));
                         }
-                        callNotification("Водитель назначен", "Автомобиль: " + mainObject.getString("car_mark")  + " " + mainObject.getString("car_model") + "\n" +
+                        callNotificationGetDriver("Вам назначен автомобиль", "К вам подъедет: \n" + "Автомобиль: " + mainObject.getString("car_mark")  + " " + mainObject.getString("car_model") + "\n" +
                                 "Цвет: " + mainObject.getString("car_color") + "\n" + "Гос номер: " + mainObject.getString("car_number"));
+                        notificationPassangerGetDriver = true;
 
                     } else if (mainObject.getString("state_kind").equals("car_at_place") || mainObject.getString("state_kind").equals("client_inside")){
                         progressBar.setVisibility(View.GONE);
+                        callButton.setVisibility(View.VISIBLE);
                         infoTextView.setText("Вас ожидает: \n" + "Автомобиль: " + mainObject.getString("car_mark")  + " " + mainObject.getString("car_model") + "\n" +
                                 "Цвет: " + mainObject.getString("car_color") + "\n" + "Гос номер: " + mainObject.getString("car_number"));
                         if(mainObject.has("crew_coords")){
                             setMarkerDriver(mainObject.getJSONObject("crew_coords").getDouble("lat"), mainObject.getJSONObject("crew_coords").getDouble("lon"));
                         }
-                        callNotificationMove("Водитель ожидает", "Автомобиль: " + mainObject.getString("car_mark")  + " " + mainObject.getString("car_model") + "\n" +
+                        callNotificationMoveDriver("Автомобиль на месте", "Вас ожидает: \n" + "Автомобиль: " + mainObject.getString("car_mark")  + " " + mainObject.getString("car_model") + "\n" +
                                 "Цвет: " + mainObject.getString("car_color") + "\n" + "Гос номер: " + mainObject.getString("car_number"));
+                        notificationPassangerMoveDriver = true;
                     }
                 } else {
                     editor.remove("ORDER_ID");
@@ -187,11 +216,27 @@ public class CurrentOrderActivity extends AppCompatActivity {
             }
         });
         }
-
+    // получаем инфу о сумме заказа и вносим ее в текстовое поле
+    private void getInfoSum() {
+        params = "order_id=" + order_id + "&fields=DISCOUNTEDSUMM";
+        Md5Hash md5Hash = new Md5Hash();
+        hashApiKey = md5Hash.md5(params + callKey);
+        params = "order_id=" + order_id + "&fields=DISCOUNTEDSUMM&signature=" + hashApiKey;
+        url = callServer + "get_info_by_order_id?" + params;
+        getRequestXML = new GetRequestXML(CurrentOrderActivity.this,url,params, hashApiKey);
+        getRequestXML.getString(new GetRequestXML.VolleyCallback() {
+            @SuppressLint("SetTextI18n")
+            @Override
+            public void onSuccess(String req, String data){
+                if (req.equals("OK")){
+                    sumTextView.setText("Сумма заказа " + data + "р.");
+                }
+            }
+        });
+    }
+    // тут рисуем маркер по координатам водителя и зумим карту в зависиммости от его росстаяния
     private void setMarkerDriver(double lat, double lon) {
         pointDriver = new Point(lat, lon);
-
-        ///////////это надо переделать/////////
         if(getDriverOrder){
             try {
                 mapView.getMap().getMapObjects().remove(markDriver);
@@ -199,7 +244,6 @@ public class CurrentOrderActivity extends AppCompatActivity {
 
             }
         }
-
         markDriver = mapView.getMap().getMapObjects().addPlacemark(pointDriver, driverImageProvider);
         boundingBox = new BoundingBox(pointMe, pointDriver);
         cameraPosition = mapView.getMap().cameraPosition(boundingBox);
@@ -211,7 +255,6 @@ public class CurrentOrderActivity extends AppCompatActivity {
 
     @Override
     protected void onStop() {
-        // Вызов onStop нужно передавать инстансам MapView и MapKit.
         mapView.onStop();
         MapKitFactory.getInstance().onStop();
         super.onStop();
@@ -219,12 +262,11 @@ public class CurrentOrderActivity extends AppCompatActivity {
 
     @Override
     protected void onStart() {
-        // Вызов onStart нужно передавать инстансам MapView и MapKit.
         super.onStart();
         MapKitFactory.getInstance().onStart();
         mapView.onStart();
     }
-
+    // отмена заказа
     public void abortedOrder(View view) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setCancelable(false);
@@ -241,7 +283,6 @@ public class CurrentOrderActivity extends AppCompatActivity {
                 postRequest.getString(new PostRequest.VolleyCallback() {
                     @Override
                     public void onSuccess(String req, String jsonArray){
-                        Log.d("HELLO", req);
                         if (req.equals("OK")){
                             editor.remove("ORDER_ID");
                             editor.apply();
@@ -261,7 +302,7 @@ public class CurrentOrderActivity extends AppCompatActivity {
         builder.create().show();
     }
 
-
+    // звонок водителю
     public void callDriver(View view) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setCancelable(false);
@@ -279,7 +320,9 @@ public class CurrentOrderActivity extends AppCompatActivity {
                 postRequestXML.getString(new PostRequestXML.VolleyCallback() {
                     @Override
                     public void onSuccess(String req){
-                        Log.d("RESPONSE", req);
+                        if(req.equals("OK")){
+                            Toast.makeText(CurrentOrderActivity.this, "Ожидайте соединение с водителем", Toast.LENGTH_SHORT).show();
+                        }
                     }
                 });
 
@@ -292,36 +335,100 @@ public class CurrentOrderActivity extends AppCompatActivity {
         builder.create().show();
 
     }
+    // уведомление о назначении водителя
+    public void callNotificationGetDriver(String title, String text){
+        if (!notificationPassangerGetDriver){
+            Intent intent = new Intent(this, CurrentOrderActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, 0);
+            NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
+                    .setSmallIcon(R.mipmap.ic_launcher)
+                    .setContentTitle(title)
+                    .setContentText(text)
+                    .setShowWhen(true)
+                    .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                    .setContentIntent(pendingIntent)
+                    .setVibrate(new long[] { 1000, 1000, 1000, 1000, 1000 })
+                    .setAutoCancel(true)
+                    .setStyle(new NotificationCompat.BigTextStyle().bigText(text));
+            NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
+            notificationManager.notify(1, builder.build());
+        }
+    }
+    // уведомление о том что водитель подъехал
+    public void callNotificationMoveDriver(String title, String text){
+        if (!notificationPassangerMoveDriver){
+            Intent intent = new Intent(this, CurrentOrderActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, 0);
+            NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
+                    .setSmallIcon(R.mipmap.ic_launcher)
+                    .setContentTitle(title)
+                    .setContentText(text)
+                    .setShowWhen(true)
+                    .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                    .setContentIntent(pendingIntent)
+                    .setVibrate(new long[] { 1000, 1000, 1000, 1000, 1000 })
+                    .setAutoCancel(true)
+                    .setStyle(new NotificationCompat.BigTextStyle().bigText(text));
+            NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
+            notificationManager.notify(2, builder.build());
+        }
+    }
 
+    // уведомление о отмене заказа или успешном его завершении
     public void callNotification(String title, String text){
-        if(!notificationGetDriver){
-            NotificationCompat.Builder builder = new NotificationCompat.Builder(this)
-                    .setSmallIcon(R.mipmap.ic_launcher)
-                    .setContentTitle(title)
-                    .setContentText(text)
-                    .setShowWhen(true)
-                    .setStyle(new NotificationCompat.BigTextStyle().bigText(text));
-            Notification notification = builder.build();
-            NotificationManager notificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
-            assert notificationManager != null;
-            notificationManager.notify(1, notification);
-            notificationGetDriver = true;
+        Intent intent = new Intent(this, OrderActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, 0);
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
+                .setSmallIcon(R.mipmap.ic_launcher)
+                .setContentTitle(title)
+                .setContentText(text)
+                .setShowWhen(true)
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                .setContentIntent(pendingIntent)
+                .setVibrate(new long[] { 1000, 1000, 1000, 1000, 1000 })
+                .setAutoCancel(true)
+                .setStyle(new NotificationCompat.BigTextStyle().bigText(text));
+        NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
+        notificationManager.notify(2, builder.build());
+    }
+
+    /**
+     * Отключаем проверку сертефиката как это работает я без понятия просто копипаст со стаковерфлоу
+     */
+    @SuppressLint("TrulyRandom")
+    public static void handleSSLHandshake() {
+        try {
+            TrustManager[] trustAllCerts = new TrustManager[]{new X509TrustManager() {
+                public X509Certificate[] getAcceptedIssuers() {
+                    return new X509Certificate[0];
+                }
+
+                @SuppressLint("TrustAllX509TrustManager")
+                @Override
+                public void checkClientTrusted(X509Certificate[] certs, String authType) {
+                }
+
+                @SuppressLint("TrustAllX509TrustManager")
+                @Override
+                public void checkServerTrusted(X509Certificate[] certs, String authType) {
+                }
+            }};
+
+            SSLContext sc = SSLContext.getInstance("SSL");
+            sc.init(null, trustAllCerts, new SecureRandom());
+            HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
+            HttpsURLConnection.setDefaultHostnameVerifier(new HostnameVerifier() {
+                @SuppressLint("BadHostnameVerifier")
+                @Override
+                public boolean verify(String arg0, SSLSession arg1) {
+                    return true;
+                }
+            });
+        } catch (Exception ignored) {
         }
     }
 
-    public void callNotificationMove(String title, String text){
-        if(!notificationMoveDriver){
-            NotificationCompat.Builder builder = new NotificationCompat.Builder(this)
-                    .setSmallIcon(R.mipmap.ic_launcher)
-                    .setContentTitle(title)
-                    .setContentText(text)
-                    .setShowWhen(true)
-                    .setStyle(new NotificationCompat.BigTextStyle().bigText(text));
-            Notification notification = builder.build();
-            NotificationManager notificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
-            assert notificationManager != null;
-            notificationManager.notify(2, notification);
-            notificationMoveDriver = true;
-        }
-    }
 }

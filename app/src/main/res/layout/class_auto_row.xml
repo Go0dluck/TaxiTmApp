@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent">
+
+    <ImageView
+        android:id="@+id/classAutoImageView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/econom"
+        android:contentDescription="TODO" />
+
+    <TextView
+        android:id="@+id/classAutoTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_horizontal"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:text="ЭКОНОМ"
+        android:layout_toEndOf="@id/classAutoImageView"/>
+
+    <TextView
+        android:id="@+id/classAutoDescriptionTextView"
+        android:layout_width="match_parent"
+        android:layout_below="@id/classAutoTextView"
+        android:text="Тут описание класса автомобилей"
+        android:textSize="16sp"
+        android:layout_toEndOf="@id/classAutoImageView"
+        android:layout_height="wrap_content"/>
+
+    <TextView
+        android:id="@+id/classAutoSumTextView"
+        android:layout_toEndOf="@id/classAutoImageView"
+        android:layout_below="@id/classAutoDescriptionTextView"
+        android:gravity="center_horizontal"
+        android:text="100р"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:textColor="@android:color/holo_red_light"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
+
+</RelativeLayout>

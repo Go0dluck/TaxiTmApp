@@ -9,8 +9,12 @@ class SettingsServer {
         return "23oli;hfghdfaslikvghfkljsvghghf";
     }
 
-    String getCrewGroupId() {
-        return "17"; }
+    String[] getCrewGroupId() {
+        return new String[]{"17", "28", "44"}; }
+
+    String[] getParamsOrder(){
+        return new String[]{"23", "39", "51"}; // обязательно попорядку
+    }
 
     String getAbortedStateId() {
         return "129"; }

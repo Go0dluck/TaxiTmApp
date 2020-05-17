@@ -9,23 +9,11 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
-
 import androidx.appcompat.app.AppCompatActivity;
-
 import com.google.android.material.textfield.TextInputLayout;
-
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
-import java.security.SecureRandom;
-import java.security.cert.X509Certificate;
 import java.util.Objects;
-
-import javax.net.ssl.HostnameVerifier;
-import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSession;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
 
 public class RegisterActivity extends AppCompatActivity {
 

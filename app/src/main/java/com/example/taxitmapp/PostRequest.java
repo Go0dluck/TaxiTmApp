@@ -1,7 +1,10 @@
 package com.example.taxitmapp;
 
 import android.content.Context;
+import android.content.DialogInterface;
 import android.util.Log;
+
+import androidx.appcompat.app.AlertDialog;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
@@ -15,6 +18,7 @@ import org.json.JSONObject;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 public class PostRequest {
     private Context context;
@@ -24,7 +28,7 @@ public class PostRequest {
 
     /*  Формируем POST запросы и отправляем данные в активити которое сформировала эти запросы*/
 
-    public PostRequest(Context context, String url, String params, String apiKey) {
+    PostRequest(Context context, String url, String params, String apiKey) {
         this.params = params;
         this.url = url;
         this.apiKey = apiKey;
@@ -49,7 +53,18 @@ public class PostRequest {
                 ,new Response.ErrorListener(){
             @Override
             public void onErrorResponse(VolleyError error){
-                Log.d("VolleyError: " , error.getMessage());
+                AlertDialog.Builder builder = new AlertDialog.Builder(context);
+                builder.setCancelable(false);
+                builder.setTitle("Предупреждение !");
+                builder.setMessage("Связь с сервером не установлена");
+                builder.setNegativeButton("Выход", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        System.exit(0);
+                    }
+                });
+                builder.create().show();
+                Log.d("VolleyError: " , Objects.requireNonNull(error.getMessage()));
             }
         })
         {

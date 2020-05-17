@@ -19,7 +19,7 @@ import org.simpleframework.xml.core.Persister;
 
 import java.util.Objects;
 
-public class PostRequestXML {
+public class GetRequestXML {
     private Context context;
     private RequestQueue mQueue;
     private String url, apiKey, params;
@@ -27,7 +27,7 @@ public class PostRequestXML {
 
     /*  Формируем POST XML запросы и отправляем данные в активити которое сформировала эти запросы*/
 
-    PostRequestXML(Context context, String url, String params, String apiKey) {
+    GetRequestXML(Context context, String url, String params, String apiKey) {
         this.params = params;
         this.url = url;
         this.apiKey = apiKey;
@@ -36,13 +36,14 @@ public class PostRequestXML {
     }
 
     void getString(final VolleyCallback callback) {
-        StringRequest stringRequest = new StringRequest(Request.Method.POST, url, new Response.Listener<String>() {
+        StringRequest stringRequest = new StringRequest(Request.Method.GET, url, new Response.Listener<String>() {
             @Override
             public void onResponse(String response) {
                 Serializer serializer = new Persister();
                 try {
                     ResponseXML dest = serializer.read(ResponseXML.class, response);
-                    callback.onSuccess(dest.descr);
+                    ResponseXML data = serializer.read(ResponseXML.class, response);
+                    callback.onSuccess(dest.descr , data.data);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -70,6 +71,6 @@ public class PostRequestXML {
     }
 
     public interface VolleyCallback{
-        void onSuccess(String req) throws JSONException;
+        void onSuccess(String req, String data) throws JSONException;
     }
 }

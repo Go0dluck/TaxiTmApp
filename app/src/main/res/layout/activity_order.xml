@@ -1,16 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:background="#FFE082"
     android:layout_height="match_parent"
     tools:context=".OrderActivity">
 
 
     <RelativeLayout
         android:id="@+id/mapLayout"
-        android:layout_above="@id/sourceLinearLayout"
+        android:layout_above="@id/destTextLayout"
         android:layout_marginBottom="5dp"
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
@@ -21,13 +19,47 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"/>
 
+        <ProgressBar
+            android:id="@+id/searchProgressBar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:indeterminateTint="@color/colorPrimary"
+            android:layout_below="@id/markerImageView"
+            android:visibility="gone" />
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:background="@android:color/white"
+            android:id="@+id/sourceTextLayout"
+            android:gravity="center_horizontal"
+            android:layout_below="@id/markerImageView"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            android:layout_marginStart="50dp"
+            android:layout_marginEnd="50dp"
+            android:focusableInTouchMode="true"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:textColor="@android:color/black"
+                android:drawableStart="@drawable/ic_location_searching_black_24dp"
+                android:singleLine="true"
+                android:padding="10dp"
+                android:gravity="center_horizontal"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textSize="15sp"
+                android:inputType="text"/>
+        </com.google.android.material.textfield.TextInputLayout>
+
+
         <ImageView
             android:id="@+id/markerImageView"
             android:paddingBottom="30dp"
             android:layout_centerInParent="true"
             android:src="@drawable/ic_location_on_black_24dp"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"/>
+            android:layout_height="wrap_content"
+            android:contentDescription="TODO" />
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:layout_width="wrap_content"
@@ -36,60 +68,28 @@
             android:layout_alignParentBottom="true"
             android:onClick="searchMe"
             android:layout_marginStart="10dp"
-            android:backgroundTint="@color/colorPrimary"
+            android:backgroundTint="@color/colorPrimaryDark"
             android:src="@drawable/ic_near_me_black_24dp" />
 
-    </RelativeLayout>
-    <LinearLayout
-        android:id="@+id/sourceLinearLayout"
-        android:layout_above="@id/destTextLayout"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal">
-
-        <ProgressBar
-            android:id="@+id/searchProgressBar"
+        <TextView
+            android:visibility="gone"
+            android:id="@+id/summTextView"
+            android:text="Предварительная стоимость: 0р"
+            android:textColor="@android:color/holo_red_light"
+            android:textSize="18sp"
+            android:layout_centerHorizontal="true"
+            android:layout_alignParentBottom="true"
+            android:background="@android:color/white"
+            android:textStyle="bold"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:visibility="gone"/>
+            android:layout_height="wrap_content"/>
 
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/sourceTextLayout"
-            android:layout_weight="1"
-            android:focusableInTouchMode="true"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content">
-
-            <com.google.android.material.textfield.TextInputEditText
-                android:textColor="@android:color/primary_text_light"
-                android:singleLine="true"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:textSize="15sp"
-                android:inputType="text"
-                android:hint="Адрес подачи"/>
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/podTextLayout"
-            android:layout_weight="4"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content">
-
-            <com.google.android.material.textfield.TextInputEditText
-                android:textColor="@android:color/primary_text_light"
-                android:singleLine="true"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:textSize="15sp"
-                android:inputType="text"
-                android:hint="Подъезд"/>
-        </com.google.android.material.textfield.TextInputLayout>
-
-    </LinearLayout>
-
+    </RelativeLayout>
 
     <com.google.android.material.textfield.TextInputLayout
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+        android:layout_marginStart="15dp"
+        android:layout_marginEnd="15dp"
         android:id="@+id/destTextLayout"
         android:layout_width="match_parent"
         android:layout_above="@id/commentTextLayout"
@@ -99,16 +99,61 @@
         <com.google.android.material.textfield.TextInputEditText
             android:singleLine="true"
             android:layout_width="match_parent"
-            android:textColor="@android:color/primary_text_light"
+            android:drawableStart="@drawable/ic_location_searching_black_24dp"
+            android:textColor="@android:color/black"
+            android:padding="5dp"
             android:textSize="15sp"
             android:hint="Адрес назначения"
             android:layout_height="wrap_content" />
     </com.google.android.material.textfield.TextInputLayout>
 
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/classAutoButton"
+        android:layout_above="@id/classAutoTextView"
+        android:src="@drawable/ic_directions_car_black_24dp"
+        android:onClick="openClassAuto"
+        android:layout_marginTop="5dp"
+        android:layout_marginStart="50dp"
+        android:backgroundTint="@color/colorPrimaryDark"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"/>
+
+    <TextView
+        android:id="@+id/classAutoTextView"
+        android:layout_above="@id/createOrderButton"
+        android:text="Класс машины"
+        android:layout_marginStart="30dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"/>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/attributOrderButton"
+        android:layout_above="@id/attributOrderTextView"
+        android:layout_marginTop="5dp"
+        android:layout_alignParentEnd="true"
+        android:layout_marginEnd="50dp"
+        android:onClick="openWishes"
+        android:src="@drawable/ic_style_black_24dp"
+        android:layout_width="wrap_content"
+        android:backgroundTint="@color/colorPrimaryDark"
+        android:layout_height="wrap_content"/>
+
+    <TextView
+        android:id="@+id/attributOrderTextView"
+        android:layout_alignParentEnd="true"
+        android:layout_above="@id/createOrderButton"
+        android:layout_marginEnd="40dp"
+        android:text="Пожелания"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"/>
+
     <com.google.android.material.textfield.TextInputLayout
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
+        android:layout_marginStart="15dp"
+        android:layout_marginEnd="15dp"
         android:id="@+id/commentTextLayout"
         android:layout_width="match_parent"
-        android:layout_above="@id/summTextView"
+        android:layout_above="@id/classAutoButton"
         android:layout_height="wrap_content">
 
         <com.google.android.material.textfield.TextInputEditText
@@ -116,18 +161,11 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Комментарий для водителя"
-            android:textColor="@android:color/primary_text_light"
+            android:drawableStart="@drawable/ic_insert_comment_black_24dp"
+            android:padding="5dp"
+            android:textColor="@android:color/black"
             android:textSize="15sp" />
     </com.google.android.material.textfield.TextInputLayout>
-
-    <TextView
-        android:id="@+id/summTextView"
-        android:text="Предварительная стоимость: 0р"
-        android:layout_above="@id/createOrderButton"
-        android:textStyle="bold"
-        android:gravity="center_horizontal"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"/>
 
     <Button
         android:id="@+id/createOrderButton"
@@ -137,7 +175,7 @@
         android:textSize="16sp"
         android:textStyle="bold"
         android:layout_margin="5dp"
-        android:text="Заказать"
+        android:text="Заказать     |        ~0р."
         android:layout_width="match_parent"
         android:layout_height="wrap_content"/>
 

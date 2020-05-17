@@ -32,17 +32,8 @@ import org.json.JSONObject;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
-import java.security.SecureRandom;
-import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Objects;
-
-import javax.net.ssl.HostnameVerifier;
-import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSession;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
 
 public class SearchAddressActivity extends AppCompatActivity {
     private TextInputLayout searchAddressTextInput;
@@ -51,7 +42,12 @@ public class SearchAddressActivity extends AppCompatActivity {
     private String server, apiKey, address, params, url;
     long latest = 0;
     long delay = 2000;
-    private ArrayList addresses, cites, kindAddress, imgs, latAddress, lonAddress;
+    private ArrayList<String> addresses;
+    private ArrayList<String> cites;
+    private ArrayList<String> kindAddress;
+    private ArrayList<Integer> imgs;
+    private ArrayList<String> latAddress;
+    private ArrayList<String> lonAddress;
 
     private SharedPreferences.Editor editor;
 
@@ -68,12 +64,12 @@ public class SearchAddressActivity extends AppCompatActivity {
         server = settingsServer.getServer();
         apiKey = settingsServer.getApiKey();
         //массивы для адресов городов и картинок и типов адресов
-        addresses = new ArrayList<String>();
-        cites = new ArrayList<String>();
-        imgs = new ArrayList<Integer>();
-        kindAddress = new ArrayList<String>();
-        latAddress = new ArrayList<String>();
-        lonAddress = new ArrayList<String>();
+        addresses = new ArrayList<>();
+        cites = new ArrayList<>();
+        imgs = new ArrayList<>();
+        kindAddress = new ArrayList<>();
+        latAddress = new ArrayList<>();
+        lonAddress = new ArrayList<>();
         final Intent recivedIntent = getIntent();
 
         SharedPreferences sharedPreferences = this.getSharedPreferences("mySharedPrefereces", Context.MODE_PRIVATE);
@@ -88,8 +84,7 @@ public class SearchAddressActivity extends AppCompatActivity {
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-
-            };
+            }
 
             @Override
             public void afterTextChanged(Editable s) {
@@ -132,7 +127,6 @@ public class SearchAddressActivity extends AppCompatActivity {
                                             //ищем адреса и заполняем массивы
                                             JSONObject mainObject = new JSONObject(jsonArray);
                                             JSONArray arrayAddress = mainObject.getJSONArray("addresses");
-
                                             final int numberOfItemsInResp = arrayAddress.length();
                                             for (int i = 0; i < numberOfItemsInResp; i++) {
                                                 if(arrayAddress.getJSONObject(i).getString("kind").equals("street")){
@@ -185,15 +179,15 @@ public class SearchAddressActivity extends AppCompatActivity {
                     searchAddressTextInput.getEditText().setText(addresses.get(position) + ", ");
                     searchAddressTextInput.getEditText().setSelection(searchAddressTextInput.getEditText().length());
                 } else if(Objects.equals(recivedIntent.getStringExtra("getEditText"), "source")){
-                    editor.putString("source_address", (String) addresses.get(position));
-                    editor.putString("source_address_lat", (String) latAddress.get(position));
-                    editor.putString("source_address_lon", (String) lonAddress.get(position));
+                    editor.putString("source_address", addresses.get(position));
+                    editor.putString("source_address_lat", latAddress.get(position));
+                    editor.putString("source_address_lon", lonAddress.get(position));
                     editor.apply();
                     finish();
                 } else {
-                    editor.putString("dest_address", (String) addresses.get(position));
-                    editor.putString("dest_address_lat", (String) latAddress.get(position));
-                    editor.putString("dest_address_lon", (String) lonAddress.get(position));
+                    editor.putString("dest_address", addresses.get(position));
+                    editor.putString("dest_address_lat", latAddress.get(position));
+                    editor.putString("dest_address_lon", lonAddress.get(position));
                     editor.apply();
                     finish();
                 }
