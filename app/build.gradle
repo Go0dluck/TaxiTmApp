@@ -5,21 +5,29 @@ android {
     buildToolsVersion "29.0.3"
 
     defaultConfig {
-        applicationId "com.example.taxitmapp"
+        resConfigs "en", "ru"
+        applicationId "com.order.taxitmapp"
         minSdkVersion 23
         targetSdkVersion 29
-        versionCode 1
-        versionName "1.0"
+        versionCode 3
+        versionName "1.0.2"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
         release {
-            minifyEnabled false
+            minifyEnabled true
+            shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
+    externalNativeBuild {
+        ndkBuild {
+            path 'src/main/jni/Android.mk'
+        }
+    }
+    ndkVersion "21.1.6352462" // <<==== Here
     repositories {
         maven {
             url "http://maven.google.com/"
@@ -41,12 +49,11 @@ dependencies {
     implementation 'com.android.volley:volley:1.1.1'
 
     implementation 'com.google.android.gms:play-services-location:17.0.0'
-    //implementation 'com.google.android.material:material:1.1.0'
     implementation 'com.yandex.android:mapkit:3.5.0'
     implementation 'com.yandex.android:search:3.5.0'
-    implementation 'com.yandex.android:directions:3.5.0'
-    implementation 'com.yandex.android:transport:3.5.0'
-    implementation 'com.yandex.android:places:3.5.0'
+    //implementation 'com.yandex.android:directions:3.5.0'
+    //implementation 'com.yandex.android:transport:3.5.0'
+    //implementation 'com.yandex.android:places:3.5.0'
     implementation files('libs/simple-xml-2.7.1.jar')
 
 }
