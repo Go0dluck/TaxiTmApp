@@ -10,5 +10,9 @@ class ResponseXML {
 
     @Path("data")
     @Element(required = false, name="DISCOUNTEDSUMM")
-    String data;
+    String DISCOUNTEDSUMM;
+
+    @Path("data")
+    @Element(required = false, name="CLIENT_BONUS_BALANCE")
+    String CLIENT_BONUS_BALANCE;
 }

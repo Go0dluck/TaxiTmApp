@@ -2,6 +2,7 @@ package com.order.taxitmapp;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -9,6 +10,7 @@ import androidx.core.content.ContextCompat;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
@@ -92,6 +94,7 @@ public class OrderActivity extends AppCompatActivity implements CameraListener {
     private SharedPreferences sharedPreferences;
     private SharedPreferences.Editor editor;
     private GetRequest getRequest;
+    private GetRequestXML getRequestXML;
     private PostRequestParams postRequest;
     private PostRequest postPay;
     private SettingsServer settingsServer;
@@ -100,7 +103,10 @@ public class OrderActivity extends AppCompatActivity implements CameraListener {
     private Double sumParametr, percentParametr;
     private ArrayList<String> parametrs;
     private ArrayList<Integer> wishes;
-    private String summOrder;
+    private int summOrder;
+    private String callKey, callServer;
+    private int bonusBalanse = 0;
+    private int summBonuse = 0;
 
     long latest = 0;
     long delay = 2000; // задержка запросов в яндекс при перемещении камеры
@@ -112,6 +118,7 @@ public class OrderActivity extends AppCompatActivity implements CameraListener {
     private static final double MINIMAL_DISTANCE = 50;
     private static final boolean USE_IN_BACKGROUND = false;
     public static final int COMFORTABLE_ZOOM_LEVEL = 18;
+    private int checkedItem = 0;
 
     @Override // запрашивает доступ к GPS
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
@@ -161,9 +168,6 @@ public class OrderActivity extends AppCompatActivity implements CameraListener {
         mapView.getMap().move(new CameraPosition(new Point(55.75370903771494, 37.61981338262558), 18, 0, 0)); // изначально координаты мавзолея в Москве
         mapView.getMap().addCameraListener(this);
 
-
-
-
         int permissionStatus = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION); // проверяем разрешение на работу с GPS
         // если получили разрешение к GPS ищем местоположение телефона переводим туда камеру и делаем запрос в яндекс что бы получить адрес
         if (permissionStatus == PackageManager.PERMISSION_GRANTED) {
@@ -202,6 +206,8 @@ public class OrderActivity extends AppCompatActivity implements CameraListener {
         apiKey = settingsServer.getApiKey(); // апи ключ
         crewGroupId = settingsServer.getCrewGroupId()[0]; // группа экипажей на которую создаем заказ
         paramsOrder = settingsServer.getParamsOrder(); // массив параметров заказа которые будут работать
+        callKey = settingsServer.getCallKey();
+        callServer = settingsServer.getCallServer();
 
         getOrderParamsList(); // запрос на все параметры заказа
 
@@ -218,6 +224,8 @@ public class OrderActivity extends AppCompatActivity implements CameraListener {
         editor.remove("dest_address_lon");
         editor.apply();
         phone = sharedPreferences.getString("phone", ""); // получаем номер телефона
+
+        getBalance(); // запрос на бонусный баланс клиента
 
         // очищаем все зоны и расстояния заказа
         sourceZoneId = "0";
@@ -336,8 +344,8 @@ public class OrderActivity extends AppCompatActivity implements CameraListener {
             public void onSuccess(String req, String jsonArray) throws JSONException {
                 if (req.equals("OK")){
                     JSONObject mainObject = new JSONObject(jsonArray);
-                    summOrder = mainObject.getString("sum");
-                    createOrderButton.setText("ЗАКАЗАТЬ     |     ~" + mainObject.getString("sum") + "р.");
+                    summOrder = Integer.parseInt(mainObject.getString("sum"));
+                    createOrderButton.setText("ЗАКАЗАТЬ     |     ~" + summOrder + "р.");
                 } else {
                     Toast.makeText(OrderActivity.this, "Не удалось расчитать стоимость", Toast.LENGTH_SHORT).show();
                 }
@@ -409,7 +417,11 @@ public class OrderActivity extends AppCompatActivity implements CameraListener {
             params.put("addresses", adresses);
             params.put("server_time_offset", 0);
             params.put("check_duplicate", true);
-            params.put("total_cost", Double.valueOf(summOrder));
+            params.put("total_cost", (double) summOrder);
+            if(summBonuse > 0){
+                params.put("use_bonus", true);
+            }
+
             JSONObject parameters = new JSONObject(params);
 
             url = server + "create_order2";
@@ -555,6 +567,54 @@ public class OrderActivity extends AppCompatActivity implements CameraListener {
         });
     }
 
+// открываем диалог с выбором типа оплаты
+    public void openBalance(View view) {
+        CharSequence[] array = {"Наличными", "Бонусами: " + bonusBalanse};
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setCancelable(false);
+        builder.setTitle("Выберите тип оплаты");
+        builder.setSingleChoiceItems(array, checkedItem, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                if(which == 1){
+
+                    summBonuse = bonusBalanse;
+                } else {
+                    summBonuse = 0;
+                }
+                checkedItem = which;
+            }
+        }).setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                try {
+                    analyzeRoute();
+                } catch (UnsupportedEncodingException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+        builder.create().show();
+    }
+
+// Получаем бонусный баланс клиента
+    private void getBalance() {
+        params = "PHONE=" + phone + "&fields=CLIENT_BONUS_BALANCE";
+        Md5Hash md5Hash = new Md5Hash();
+        hashApiKey = md5Hash.md5(params + callKey);
+        params = "PHONE=" + phone + "&fields=CLIENT_BONUS_BALANCE&signature=" + hashApiKey;
+        url = callServer + "get_info_by_phone?" + params;
+        getRequestXML = new GetRequestXML(OrderActivity.this,url,params, hashApiKey);
+        getRequestXML.getString(new GetRequestXML.VolleyCallback() {
+            @SuppressLint("SetTextI18n")
+            @Override
+            public void onSuccess(String req, String data){
+                if (req.equals("OK")){
+                    bonusBalanse = (int) Math.floor(Double.parseDouble(data));
+                }
+            }
+        });
+    }
 }
 
 

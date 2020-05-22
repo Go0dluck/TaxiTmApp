@@ -62,8 +62,13 @@ public class GetRequestXML {
                 Serializer serializer = new Persister();
                 try {
                     ResponseXML dest = serializer.read(ResponseXML.class, response);
-                    ResponseXML data = serializer.read(ResponseXML.class, response);
-                    callback.onSuccess(dest.descr , data.data);
+                    ResponseXML DISCOUNTEDSUMM = serializer.read(ResponseXML.class, response);
+                    ResponseXML CLIENT_BONUS_BALANCE = serializer.read(ResponseXML.class, response);
+                    if (DISCOUNTEDSUMM.DISCOUNTEDSUMM == null){
+                        callback.onSuccess(dest.descr , CLIENT_BONUS_BALANCE.CLIENT_BONUS_BALANCE);
+                    } else {
+                        callback.onSuccess(dest.descr , DISCOUNTEDSUMM.DISCOUNTEDSUMM);
+                    }
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
