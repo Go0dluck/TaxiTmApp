@@ -59,8 +59,6 @@ public class PostRequestParams {
     }
 
     public void getString(final VolleyCallback callback) {
-        //Map<String, String> params1 = new HashMap();
-        //params1.put("source_time", timeNow);
         JSONObject parameters = new JSONObject(params);
 
         JsonObjectRequest stringRequest = new JsonObjectRequest(Request.Method.POST, url , parameters,

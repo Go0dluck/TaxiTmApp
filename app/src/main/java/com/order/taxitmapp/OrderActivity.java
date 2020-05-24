@@ -1,12 +1,5 @@
 package com.order.taxitmapp;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.appcompat.app.AlertDialog;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
-
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -14,21 +7,30 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
 import com.google.android.material.textfield.TextInputLayout;
 import com.yandex.mapkit.Animation;
 import com.yandex.mapkit.MapKitFactory;
+import com.yandex.mapkit.geometry.BoundingBox;
 import com.yandex.mapkit.geometry.Point;
+import com.yandex.mapkit.geometry.Polyline;
 import com.yandex.mapkit.location.FilteringMode;
 import com.yandex.mapkit.location.Location;
 import com.yandex.mapkit.location.LocationListener;
@@ -38,15 +40,18 @@ import com.yandex.mapkit.map.CameraListener;
 import com.yandex.mapkit.map.CameraPosition;
 import com.yandex.mapkit.map.CameraUpdateSource;
 import com.yandex.mapkit.map.Map;
+import com.yandex.mapkit.map.MapObjectCollection;
+import com.yandex.mapkit.map.PolylineMapObject;
 import com.yandex.mapkit.mapview.MapView;
 import com.yandex.mapkit.search.Response;
+import com.yandex.mapkit.search.SearchFactory;
 import com.yandex.mapkit.search.SearchManager;
 import com.yandex.mapkit.search.SearchManagerType;
 import com.yandex.mapkit.search.SearchOptions;
 import com.yandex.mapkit.search.SearchType;
 import com.yandex.mapkit.search.Session;
 import com.yandex.runtime.Error;
-import com.yandex.mapkit.search.SearchFactory;
+import com.yandex.runtime.image.ImageProvider;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -54,21 +59,11 @@ import org.json.JSONObject;
 
 import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
-import java.security.SecureRandom;
-import java.security.cert.X509Certificate;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Objects;
-
-import javax.net.ssl.HostnameVerifier;
-import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSession;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
 
 public class OrderActivity extends AppCompatActivity implements CameraListener {
     private static final int REQUEST_CODE_PERMISSION_FINE_LOCATION = 777;
@@ -77,7 +72,7 @@ public class OrderActivity extends AppCompatActivity implements CameraListener {
     private LocationListener locationListener;
     private ProgressBar searchProgressBar;
     private TextInputLayout sourceTextLayout;
-    private TextInputLayout destTextLayout, podTextLayout, commentTextLayout;
+    private TextInputLayout destTextLayout, commentTextLayout;
     private String server;
     private String apiKey;
     private String url;
@@ -87,7 +82,7 @@ public class OrderActivity extends AppCompatActivity implements CameraListener {
     private String destZoneId;
     private String cityDist;
     private String countryDist;
-    private String sourceCountryDist, params, timeNow, nameParametr, idParametr;
+    private String sourceCountryDist, params, nameParametr, idParametr;
     private String crewGroupId;
     private Double my_lat, my_lon;
     private TextView summTextView;
@@ -96,7 +91,6 @@ public class OrderActivity extends AppCompatActivity implements CameraListener {
     private GetRequest getRequest;
     private GetRequestXML getRequestXML;
     private PostRequestParams postRequest;
-    private PostRequest postPay;
     private SettingsServer settingsServer;
     private Button createOrderButton;
     private String[] paramsOrder;
@@ -107,6 +101,13 @@ public class OrderActivity extends AppCompatActivity implements CameraListener {
     private String callKey, callServer;
     private int bonusBalanse = 0;
     private int summBonuse = 0;
+    private ArrayList<Point> polylinePoints;
+    private MapObjectCollection mapObjects;
+    private PolylineMapObject polyline;
+    private Boolean routingToMap = false;
+    private BoundingBox boundingBox;
+    private CameraPosition cameraSourceDestPoint;
+    private ImageView markerImageView;
 
     long latest = 0;
     long delay = 2000; // задержка запросов в яндекс при перемещении камеры
@@ -167,6 +168,7 @@ public class OrderActivity extends AppCompatActivity implements CameraListener {
         mapView.getMap().setRotateGesturesEnabled(false); // запрещаем крутить карту
         mapView.getMap().move(new CameraPosition(new Point(55.75370903771494, 37.61981338262558), 18, 0, 0)); // изначально координаты мавзолея в Москве
         mapView.getMap().addCameraListener(this);
+        mapObjects = mapView.getMap().getMapObjects().addCollection();
 
         int permissionStatus = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION); // проверяем разрешение на работу с GPS
         // если получили разрешение к GPS ищем местоположение телефона переводим туда камеру и делаем запрос в яндекс что бы получить адрес
@@ -199,6 +201,7 @@ public class OrderActivity extends AppCompatActivity implements CameraListener {
         createOrderButton = findViewById(R.id.createOrderButton);
         summTextView = findViewById(R.id.summTextView);
         searchProgressBar = findViewById(R.id.searchProgressBar);
+        markerImageView = findViewById(R.id.markerImageView);
 
         // Получаем адрес сервера и АПИ ключ и группу экипажей
         settingsServer = new SettingsServer();
@@ -226,6 +229,8 @@ public class OrderActivity extends AppCompatActivity implements CameraListener {
         phone = sharedPreferences.getString("phone", ""); // получаем номер телефона
 
         getBalance(); // запрос на бонусный баланс клиента
+
+        polylinePoints = new ArrayList<>();
 
         // очищаем все зоны и расстояния заказа
         sourceZoneId = "0";
@@ -282,26 +287,53 @@ public class OrderActivity extends AppCompatActivity implements CameraListener {
     //Анализируем маршрут
     private void analyzeRoute() throws UnsupportedEncodingException {
         if(!sharedPreferences.getString("source_address", "").isEmpty() & !sharedPreferences.getString("dest_address", "").isEmpty()) {
-            String params = "source=" + URLEncoder.encode(sharedPreferences.getString("source_address", ""), "UTF-8") +
-                    "&dest=" + URLEncoder.encode(sharedPreferences.getString("dest_address", ""), "UTF-8") +
-                    "&source_lon=" + sharedPreferences.getString("source_address_lon", "") +
-                    "&source_lat=" + sharedPreferences.getString("source_address_lat", "") +
-                    "&dest_lon=" + sharedPreferences.getString("dest_address_lon", "") +
-                    "&dest_lat=" + sharedPreferences.getString("dest_address_lat", "");
-            url = server + "analyze_route?" + params;
+
+            HashMap<String, java.io.Serializable> sourceHashMap = new HashMap<>();
+            sourceHashMap.put("address", sharedPreferences.getString("source_address", ""));
+            sourceHashMap.put("lat", Double.valueOf(sharedPreferences.getString("source_address_lat", "")));
+            sourceHashMap.put("lon", Double.valueOf(sharedPreferences.getString("source_address_lon", "")));
+
+            HashMap<String, java.io.Serializable> destHashMap = new HashMap<>();
+            destHashMap.put("address", sharedPreferences.getString("dest_address", ""));
+            destHashMap.put("lat", Double.valueOf(sharedPreferences.getString("dest_address_lat", "")));
+            destHashMap.put("lon", Double.valueOf(sharedPreferences.getString("dest_address_lon", "")));
+
+            final ArrayList<HashMap<String, Serializable>> adresses = new ArrayList<>();
+            adresses.add(sourceHashMap);
+            adresses.add(destHashMap);
+
+            HashMap<String, java.io.Serializable> params = new HashMap<>();
+            params.put("addresses", adresses);
+            params.put("get_full_route_coords", true);
+
+            JSONObject parameters = new JSONObject(params);
+
+            url = server + "analyze_route2";
             Md5Hash md5Hash = new Md5Hash();
-            hashApiKey = md5Hash.md5(params + apiKey);
-            getRequest = new GetRequest(this, url, params, hashApiKey);
-            getRequest.getString(new GetRequest.VolleyCallback() {
+            hashApiKey = md5Hash.md5(parameters + apiKey);
+            postRequest = new PostRequestParams(this, url, params, hashApiKey);
+            postRequest.getString(new PostRequestParams.VolleyCallback() {
+                @SuppressLint("SetTextI18n")
                 @Override
                 public void onSuccess(String req, String jsonArray) throws JSONException {
                     if (req.equals("OK")) {
                         JSONObject mainObject = new JSONObject(jsonArray);
-                        sourceZoneId = mainObject.getString("source_zone_id");
-                        destZoneId = mainObject.getString("dest_zone_id");
                         cityDist = mainObject.getString("city_dist");
                         countryDist = mainObject.getString("country_dist");
                         sourceCountryDist = mainObject.getString("source_country_dist");
+
+                        polylinePoints.clear();
+                        JSONArray routeCoords = mainObject.getJSONArray("full_route_coords");
+                        for (int i = 0; i < routeCoords.length(); i++) {
+                            polylinePoints.add(new Point(Double.parseDouble(routeCoords.getJSONObject(i).getString("lat")), Double.parseDouble(routeCoords.getJSONObject(i).getString("lon"))));
+                        }
+                        routingToMap = true;
+                        createObject();
+                        JSONArray adressesAnswer = mainObject.getJSONArray("addresses");
+                        sourceZoneId = adressesAnswer.getJSONObject(0).getString("zone_id");
+                        destZoneId = adressesAnswer.getJSONObject(1).getString("zone_id");
+
+
                         calcOrderCost(sourceZoneId, destZoneId, cityDist, countryDist, sourceCountryDist);
                     } else {
                         sourceZoneId = "0";
@@ -401,9 +433,9 @@ public class OrderActivity extends AppCompatActivity implements CameraListener {
 
             HashMap<String, java.io.Serializable> destHashMap = new HashMap<>();
             destHashMap.put("address", dest);
-            sourceHashMap.put("lat", Double.valueOf(sharedPreferences.getString("dest_address_lat", "")));
-            sourceHashMap.put("lon", Double.valueOf(sharedPreferences.getString("dest_address_lon", "")));
-            sourceHashMap.put("zone_id", Integer.valueOf(destZoneId));
+            destHashMap.put("lat", Double.valueOf(sharedPreferences.getString("dest_address_lat", "")));
+            destHashMap.put("lon", Double.valueOf(sharedPreferences.getString("dest_address_lon", "")));
+            destHashMap.put("zone_id", Integer.valueOf(destZoneId));
 
             ArrayList<HashMap<String, Serializable>> adresses = new ArrayList<>();
             adresses.add(sourceHashMap);
@@ -449,7 +481,7 @@ public class OrderActivity extends AppCompatActivity implements CameraListener {
     // при перетаскивании камеры получаем координаты и адрес из Яндекса
     @Override
     public void onCameraPositionChanged(@NonNull Map map, @NonNull CameraPosition cameraPosition, @NonNull CameraUpdateSource cameraUpdateSource, boolean b) {
-        if(b){
+        if (b) {
             searchProgressBar.setVisibility(View.VISIBLE); // показываем прогресс бар
             latest = System.currentTimeMillis(); //обновляем время последнего изменения текста
             Handler h = new Handler(Looper.getMainLooper());
@@ -457,33 +489,36 @@ public class OrderActivity extends AppCompatActivity implements CameraListener {
                 // получаем адрес из Яндекса только если перестали перемещать карту 2 сек
                 @Override
                 public void run() {
-                    if(System.currentTimeMillis() - delay > latest){
-                        searchManager.submit(
-                                new Point(mapView.getMap().getCameraPosition().getTarget().getLatitude(), mapView.getMap().getCameraPosition().getTarget().getLongitude()),
-                                18,
-                                new SearchOptions().setSearchTypes(SearchType.GEO.value),
-                                new Session.SearchListener() {
-                                    @Override
-                                    public void onSearchResponse(@NonNull Response response) {
-                                        Objects.requireNonNull(sourceTextLayout.getEditText()).setText(Objects.requireNonNull(response.getCollection().getChildren().get(0).getObj()).getName());
-                                        // заносим адрес и координаты в файл
-                                        editor.putString("source_address", Objects.requireNonNull(sourceTextLayout.getEditText()).getText().toString().trim());
-                                        editor.putString("source_address_lat", String.valueOf(mapView.getMap().getCameraPosition().getTarget().getLatitude()));
-                                        editor.putString("source_address_lon", String.valueOf(mapView.getMap().getCameraPosition().getTarget().getLongitude()));
-                                        editor.apply();
-                                        searchProgressBar.setVisibility(View.GONE); // убираем прогресс бар
-                                        try {
-                                            analyzeRoute();
-                                        } catch (UnsupportedEncodingException e) {
-                                            e.printStackTrace();
+                    if (System.currentTimeMillis() - delay > latest) {
+                        if (!routingToMap) {
+                            searchManager.submit(
+                                    new Point(mapView.getMap().getCameraPosition().getTarget().getLatitude(), mapView.getMap().getCameraPosition().getTarget().getLongitude()),
+                                    18,
+                                    new SearchOptions().setSearchTypes(SearchType.GEO.value),
+                                    new Session.SearchListener() {
+                                        @Override
+                                        public void onSearchResponse(@NonNull Response response) {
+                                            Objects.requireNonNull(sourceTextLayout.getEditText()).setText(Objects.requireNonNull(response.getCollection().getChildren().get(0).getObj()).getName());
+                                            // заносим адрес и координаты в файл
+                                            editor.putString("source_address", Objects.requireNonNull(sourceTextLayout.getEditText()).getText().toString().trim());
+                                            editor.putString("source_address_lat", String.valueOf(mapView.getMap().getCameraPosition().getTarget().getLatitude()));
+                                            editor.putString("source_address_lon", String.valueOf(mapView.getMap().getCameraPosition().getTarget().getLongitude()));
+                                            editor.apply();
+                                            searchProgressBar.setVisibility(View.GONE); // убираем прогресс бар
+                                            try {
+                                                analyzeRoute();
+                                            } catch (UnsupportedEncodingException e) {
+                                                e.printStackTrace();
+                                            }
                                         }
-                                    }
 
-                                    @Override
-                                    public void onSearchError(@NonNull Error error) {
-                                        Toast.makeText(OrderActivity.this, "Нет данных", Toast.LENGTH_SHORT).show();
-                                    }
-                                });
+                                        @Override
+                                        public void onSearchError(@NonNull Error error) {
+                                            Toast.makeText(OrderActivity.this, "Нет данных", Toast.LENGTH_SHORT).show();
+                                        }
+                                    });
+                        }
+
                     }
 
                 }
@@ -491,6 +526,7 @@ public class OrderActivity extends AppCompatActivity implements CameraListener {
             h.postDelayed(r, delay + 50);//в главный поток с задержкой delay + 50 миллисекунд
         }
     }
+
     // переводим камеру на местоположение телефона при нажатии на кнопку стрелки
     public void searchMe(View view) {
         mapView.getMap().move(
@@ -614,6 +650,23 @@ public class OrderActivity extends AppCompatActivity implements CameraListener {
                 }
             }
         });
+    }
+
+    private void createObject() {
+        mapObjects.clear();
+        polyline = mapObjects.addPolyline(new Polyline(polylinePoints));
+        polyline.setOutlineColor(Color.BLACK);
+        polyline.setStrokeColor(Color.RED);
+        polyline.setZIndex(100.0f);
+
+        boundingBox = new BoundingBox(polylinePoints.get(0), polylinePoints.get(polylinePoints.size() - 1));
+        cameraSourceDestPoint = mapView.getMap().cameraPosition(boundingBox);
+        mapView.getMap().move(new CameraPosition(cameraSourceDestPoint.getTarget(), cameraSourceDestPoint.getZoom() - 0.5f, cameraSourceDestPoint.getAzimuth(), cameraSourceDestPoint.getTilt()),
+                new Animation(Animation.Type.SMOOTH, 0f), null);
+
+        markerImageView.setVisibility(View.GONE);
+        mapObjects.addPlacemark(polylinePoints.get(0), ImageProvider.fromResource(this, R.drawable.marker));
+        mapObjects.addPlacemark(polylinePoints.get(polylinePoints.size() - 1), ImageProvider.fromResource(this, R.drawable.marker));
     }
 }
 
