@@ -33,7 +33,7 @@ public class ClassAutoActivity extends AppCompatActivity {
     private final String[] descriptions = {"Машины эконом класса", "Машины стандарт класса", "Машины бизнесс класса"}; // массив описания класса авто
     private ArrayList<String> sum; // массив суммы класса авто
     private final int[] images = {R.drawable.econom, R.drawable.standart, R.drawable.buisness}; // массив картинок
-    private ListView lv;
+    private ListView lv; //hz
     private SettingsServer settingsServer;
     private String url, server, hashApiKey, apiKey, phone, sourceZoneId, destZoneId, cityDist, countryDist, sourceCountryDist;
     private PostRequestParams postRequest;
