@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.order.taxitmapp">
+    package="com.order.taxitmapp1">
     <!--
          The ACCESS_COARSE/FINE_LOCATION permissions are not required to use
          Google Maps Android API v2, but you must specify either coarse or fine
@@ -20,22 +20,22 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
         android:usesCleartextTraffic="true">
-        <activity android:name=".WishesActivity" />
-        <activity android:name=".ClassAutoActivity" />
+        <activity android:name="com.order.taxitmapp1.WishesActivity" />
+        <activity android:name="com.order.taxitmapp1.ClassAutoActivity" />
         <activity
-            android:name=".CurrentOrderActivity"
+            android:name="com.order.taxitmapp1.CurrentOrderActivity"
             android:screenOrientation="locked" />
         <activity
-            android:name=".SearchAddressActivity"
+            android:name="com.order.taxitmapp1.SearchAddressActivity"
             android:screenOrientation="locked" />
         <activity
-            android:name=".OrderActivity"
+            android:name="com.order.taxitmapp1.OrderActivity"
             android:screenOrientation="locked" />
         <activity
-            android:name=".RegisterActivity"
+            android:name="com.order.taxitmapp1.RegisterActivity"
             android:screenOrientation="locked" />
         <activity
-            android:name=".SplashActivity"
+            android:name="com.order.taxitmapp1.SplashActivity"
             android:screenOrientation="locked">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
