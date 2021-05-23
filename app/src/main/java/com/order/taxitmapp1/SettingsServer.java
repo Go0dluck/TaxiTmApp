@@ -8,7 +8,7 @@ class SettingsServer {
     public native String getNativeKeyCallKey();
 
     String getServer() {
-        return "https://194.176.118.233:8089/common_api/1.0/"; }
+        return "https://IP:PORT/common_api/1.0/"; }
 
     String getApiKey() {
         return new String(Base64.decode(getNativeKeyApiKey(),Base64.DEFAULT));
@@ -29,11 +29,11 @@ class SettingsServer {
     }
 
     String getCallServer(){
-        return "https://194.176.118.233:8089/tm_tapi/1.0/";
+        return "https://IP:PORT/tm_tapi/1.0/";
     }
 
     String getIp(){
-        return "194.176.118.233";
+        return "IP:PORT";
     }
 
     static {
